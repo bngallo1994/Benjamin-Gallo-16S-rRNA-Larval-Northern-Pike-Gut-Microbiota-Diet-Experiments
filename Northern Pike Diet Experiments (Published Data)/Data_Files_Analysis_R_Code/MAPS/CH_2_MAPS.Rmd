@@ -1,0 +1,25 @@
+---
+title: "CH_2_MAPS"
+author: "Benjamin Gallo"
+date: "11/17/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggmap)
+library(ggsn)
+
+register_google(key = "AIzaSyBDJXPYPwZMdoW5tGCVBqpvr4uBjw6oCq8")
+
+CH_2_WETLAND<- get_googlemap(center = c(lon = -76.1197222, lat = 44.2122), zoom = 13, maptype = "terrain", color="bw", style = 'feature:road|element:geometry|visibility:off&style=feature:all|element:labels|visibility:off')
+
+CH_2_WETLAND_MAP<-ggmap(CH_2_WETLAND) + coord_equal() + ggsn::north(x.min = -76.167, x.max = -76.152, y.min = 44.235, y.max = 44.245, scale = 0.75) +  ggsn::scalebar(x.min = -76.180, x.max = -76.145, y.min = 44.230, y.max = 44.233, dist=1, dd2km = TRUE, model = "WGS84", height = 0.5, st.dist = 0.5) + coord_fixed(1.3)
+
+CH_2_WETLAND_LABS<-data.frame( lat = c(44.19437222, 44.2290333, 44.233103),  lon = c(-76.13833333, -76.09138889, -76.089350), names = c("CARPENTERS", "UPPER FRENCH CREEK", ""), stringsAsFactors = FALSE)
+
+CH_2_WETLAND_MAP_FINAL<- CH_2_WETLAND_MAP + geom_point(data=CH_2_WETLAND_LABS, aes(x = lon, y = lat), color = "black", size = 5, alpha = 0.5) + geom_text(data=CH_2_WETLAND_LABS, aes(label = names), color = "black", vjust = 3) + geom_text(aes(label = "FRENCH CREEK"), x = -76.118, y = 44.209, size = 3, color = "black", angle = 35) + geom_text(aes(label = "St. Lawrence River"), x = -76.125, y = 44.24, size = 6,  color = "black", angle = 25) + geom_text(aes(label = "FRENCH BAY"), x = -76.08934, y = 44.2354, size= 4, color = "black")
+```
