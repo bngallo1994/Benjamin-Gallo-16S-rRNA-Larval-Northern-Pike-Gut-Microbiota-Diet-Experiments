@@ -30,7 +30,6 @@ library(multcompView)
 
 #Total Weight Analysis
 ##Assessing Growth of Artemia and Zooplankton Fed Fish Over Time
-###Individual File: CH_2_Weight_Analysis.Rmd
 
 Fig. 1 - Growth of Fish During Experiment
 ```{r}
@@ -191,7 +190,6 @@ DO_FINAL+ theme(axis.text = element_text(size=14), axis.title = element_text(siz
 #NMDS Analysis -  Comparing Beta Diversity between Samples
 
 ##Treatments vs. Controls
-###Individual File: CH_2_Treats_Vs_Controls_NMDS.Rmd
 
 
 Combine all similar taxa by 'Genus'
@@ -709,14 +707,14 @@ ggarrange(A1_Replicates, A2_Replicates, Z2_Replicates, labels = c("A", "B", "C")
 
 #Rarefaction Analysis - Determining Sequencing Depth
 
-##All Samples
-###Individual File: CH_2_Rarefaction_Alpha_Diversity.Rmd
+##Fish Samples
+
 
 *Initial Analysis is completed with `biom-format` and `mothur` commands using `bash` commands. Please refer to `biom_mothur_code.txt` in pathway `~/Dropbox/bdgallo_MS_SUNYESF/NON_R_Scripts` for information*
 
 *The final product fom these commands is `CH_2_ALL_ASV_Table.groups.rarefaction`*
 
-CH.2 Rarefaction (All)
+CH.2 Rarefaction (Fish)
 ```{r}
 CH_2_Rarefaction_data<-read.table("~/CH_2_Rarefaction_Alpha_Diversity/CH_2_seqtab_ALL_COMBINED.groups.rarefaction", header=TRUE)
 CH_2_Rarefaction_ColumnsPrimary<-CH_2_Rarefaction_data[grepl("user", names(CH_2_Rarefaction_data))]
@@ -746,7 +744,6 @@ CH_2_FishOnly_rarefaction
 
 #Taxa  Analysis - Determining Top 10 Taxa for Treatments
 ##All Samples
-###Individual File: CH_2_taxa_graphs.Rmd
 
 *Note that taxa excel sheet was cleaned manually by removing all NA calls in Kingdom and Phylum columns. Additionally, any Kingdom tracing to Eukaryotes/Archaea were also removed*
 
