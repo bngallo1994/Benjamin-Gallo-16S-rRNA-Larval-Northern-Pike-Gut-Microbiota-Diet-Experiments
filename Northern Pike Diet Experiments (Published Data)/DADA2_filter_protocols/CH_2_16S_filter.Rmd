@@ -1,0 +1,61 @@
+---
+title: "CH_2_16S_Filtering"
+author: "Benjamin Gallo"
+date: "11/29/2018"
+output: html_document
+---
+
+```{r}
+library(dada2)
+CH_2_path<-"~/Desktop/CH_2_dada2_R"
+list.files(CH_2_path)
+CH_2_fnFs<-sort(list.files(CH_2_path, pattern="_R1_001.fastq", full.names = TRUE))
+CH_2_fnRs<-sort(list.files(CH_2_path, pattern="_R2_001.fastq", full.names = TRUE))
+CH_2_sample.names<-sapply(strsplit(basename(CH_2_fnFs), "_"), `[`, 1)
+
+CH_2_filtFs <- file.path(CH_2_path, "filtered", paste0(CH_2_sample.names, "_F_filt.fastq.gz"))
+CH_2_filtRs <- file.path(CH_2_path, "filtered", paste0(CH_2_sample.names, "_R_filt.fastq.gz"))
+
+CH_2_filter_out <- filterAndTrim(CH_2_fnFs, CH_2_filtFs, CH_2_fnRs, CH_2_filtRs, truncLen=c(290,270),maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE, trimLeft = 17,compress=TRUE, multithread=TRUE)
+
+CH_2_errF <- learnErrors(CH_2_filtFs, multithread=TRUE)
+plotErrors(CH_2_errF, nominalQ=TRUE)
+
+CH_2_errR <- learnErrors(CH_2_filtRs, multithread=TRUE)
+plotErrors(CH_2_errR, nominalQ = TRUE)
+
+CH_2_derepFs <- derepFastq(CH_2_filtFs, verbose=TRUE)
+CH_2_derepRs <- derepFastq(CH_2_filtRs, verbose=TRUE)
+names(CH_2_derepFs) <- CH_2_sample.names
+names(CH_2_derepRs) <- CH_2_sample.names
+
+CH_2_dadaFs<-dada(CH_2_derepFs, err=CH_2_errF, multithread = TRUE)
+CH_2_dadaRs<-dada(CH_2_derepRs, err=CH_2_errR, multithread = TRUE)
+
+CH_2_mergers<-mergePairs(CH_2_dadaFs, CH_2_derepFs, CH_2_dadaRs, CH_2_derepRs, verbose=TRUE)
+
+CH_2_seqtab<-makeSequenceTable(CH_2_mergers)
+dim(CH_2_seqtab)
+table(nchar(getSequences(CH_2_seqtab)))
+
+CH_2_seqtab_mod<-CH_2_seqtab[,nchar(colnames(CH_2_seqtab)) %in% seq(378, 412)]
+table(nchar(getSequences(CH_2_seqtab_mod)))
+
+CH_2_seqtab.nonchim<-removeBimeraDenovo(CH_2_seqtab_mod, method="consensus", multithread = TRUE, verbose = TRUE)
+dim(CH_2_seqtab)
+dim(CH_2_seqtab.nonchim)
+
+CH_2_getN <- function(x) sum(getUniques(x))
+H_2_track <- cbind(CH_2_filter_out, sapply(CH_2_dadaFs, CH_2_getN), sapply(CH_2_dadaRs, CH_2_getN), sapply(CH_2_mergers, CH_2_getN), rowSums(CH_2_seqtab.nonchim))
+colnames(CH_2_track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
+rownames(CH_2_track) <- CH_2_sample.names
+head(CH_2_track)
+
+CH_2_taxa <- assignTaxonomy(CH_2_seqtab.nonchim, "~/tax/silva_nr_v132_train_set.fa.gz", multithread=TRUE)
+
+CH_2_taxa <- addSpecies(CH_2_taxa, "~/tax/silva_species_assignment_v132.fa.gz")
+
+write.csv(cbind(t(CH_2_seqtab.nonchim), CH_2_taxa), "path/to/seqtab.csv", quote=FALSE)
+
+```
+

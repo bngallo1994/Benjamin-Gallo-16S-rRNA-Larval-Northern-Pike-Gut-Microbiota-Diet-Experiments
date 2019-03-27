@@ -1,0 +1,1806 @@
+---
+title: "CH_2_ALL_MASTER_FILE"
+author: "Benjamin Gallo"
+date: "1/4/2019"
+output: html_document
+---
+
+###NOTE ALL FILES NEEDED FOR ANALYSES (/FILES CREATED DURING ANALYSES) ARE FOUND IN IDENTICALLY NAMED FOLDERS IN REPOSITORY!###
+
+
+Necessary Packages
+
+```{r, echo=TRUE, message=FALSE}
+library(vegan)
+library(ggplot2)
+library(ggpubr)
+library(pairwiseAdonis)
+library(reshape2)
+library(phyloseq)
+library(userfriendlyscience)
+library(microbiome)
+library(themetagenomics)
+library(car)
+library(betareg)
+library(fitdistrplus)
+library(RColorBrewer)
+library(emmeans)
+library(multcompView)
+```
+
+#Total Weight Analysis
+##Assessing Growth of Artemia and Zooplankton Fed Fish Over Time
+###Individual File: CH_2_Weight_Analysis.Rmd
+
+Fig. 1 - Growth of Fish During Experiment
+```{r}
+TW_raw<-read.csv("~/TW_Analysis/Ch_2_TW_ANALYSIS.csv", header = TRUE)
+levels(TW_raw$TREATMENT)[c(1:6)]<-c("A1","A2","A3","Z1","Z2","Z3")
+```
+
+Plot data (Date + Treament = Factor) --> TANK EFFECT
+```{r}
+TW_W1<-TW_raw[which(TW_raw$DATE=="1W"),]
+TW_W2<-TW_raw[which(TW_raw$DATE=="2W"),]
+TW_W3<-TW_raw[which(TW_raw$DATE=="3W"),]
+TW_W4<-TW_raw[which(TW_raw$DATE=="4W"),]
+
+TW_1<-ggplot(TW_W1, aes(x=TREATMENT, y  = TW.g., fill = GROUP)) + geom_boxplot() + ylim(0, 0.65) + theme(axis.title.x = element_blank()) + annotate("text", label = c("A","AC","ABC","B","BC","B"), y = c(0.07, 0.07, 0.06, 0.05, 0.06, 0.05), x = c(1:6), size = 3)  + theme(panel.background = element_rect(fill = "white", colour = "black")) + ylab("Total Weight(g)") + xlab("") + theme_classic()
+
+TW_2<-ggplot(TW_W2, aes(x=TREATMENT, y  = TW.g., fill = GROUP)) + geom_boxplot() + ylim(0, 0.65) + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank()) + annotate("text", label = c("A","A","AB","B","B"), y = c(0.12, 0.12, 0.06, 0.07, 0.07), x = c(1:5), size = 3)  + theme(panel.background = element_rect(fill = "white", colour = "black")) + ylab("") + theme_classic() + xlab("")
+
+TW_3<-ggplot(TW_W3, aes(x=TREATMENT, y  = TW.g., fill = GROUP)) + geom_boxplot() + ylim(0, 0.65) + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank()) + annotate("text", label = c("AB","AB","B","A","A","A"), y = c(0.25, 0.37, 0.30, 0.15, 0.17, 0.16), x = c(1:6), size = 3)  + theme(panel.background = element_rect(fill = "white", colour = "black")) + ylab("")+ theme_classic() + xlab("")
+
+TW_4<-ggplot(TW_W4, aes(x=TREATMENT, y  = TW.g., fill = GROUP)) + geom_boxplot() + ylim(0, 0.65) + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank()) + annotate("text", label = c("AB","AB","A","B","B","B"), y = c(0.49, 0.56, 0.61, 0.34, 0.31, 0.21), x = c(1:6), size = 3)  + theme(panel.background = element_rect(fill = "white", colour = "black")) + ylab("")+ theme_classic() + xlab("")
+
+TW_FINAL<-ggarrange(TW_1, TW_2, TW_3, TW_4, ncol=4, nrow=1, common.legend = TRUE,  legend = c("right"), widths = c(1.1,1,1,1), labels = c("Week 1", "Week 2", "Week 3", "Week 4"), hjust = c(-.77, -.77, -.77, -.77), vjust = 1.75)
+
+TW_FINAL
+```
+
+Welch's Test / Week with post-hoc Games Howell --> TANK EFFECT
+
+```{r}
+TW_W1<-subset(TW_raw, DATE =="1W")
+TW_W2<-subset(TW_raw, DATE == "2W")
+TW_W3<-subset(TW_raw, DATE == "3W")
+TW_W4<-subset(TW_raw, DATE == "4W")
+
+W1_Welch<-oneway.test(TW.g.~TREATMENT, data=TW_W1)
+W2_Welch<-oneway.test(TW.g.~TREATMENT, data=TW_W2)
+W3_Welch<-oneway.test(TW.g.~TREATMENT, data=TW_W3)
+W4_Welch<-oneway.test(TW.g.~TREATMENT, data=TW_W4)
+print(W1_Welch)
+print(W2_Welch)
+print(W3_Welch)
+print(W4_Welch)
+
+W1_PH<-posthocTGH(y = TW_W1$TW.g., x  = TW_W1$TREATMENT, method = "games-howell")
+W1_PH
+
+TW_W2$TREATMENT<-as.character(TW_W2$TREATMENT)
+TW_W2$TREATMENT<-factor(TW_W2$TREATMENT, levels = c("A2", "A3", "Z1", "Z2", "Z3"))
+
+W2_PH<-posthocTGH(y = TW_W2$TW.g., x  = TW_W2$TREATMENT, method = "games-howell")
+W2_PH
+W3_PH<-posthocTGH(y = TW_W3$TW.g., x  = TW_W3$TREATMENT, method = "games-howell")
+W3_PH
+W4_PH<-posthocTGH(y = TW_W4$TW.g., x  = TW_W4$TREATMENT, method = "games-howell")
+W4_PH
+```
+
+Plot Combined Data (No Significant Difference between tanks)
+SummarySE function courtesy of R Cookbook (http://www.cookbook-r.com/Graphs/Plotting_means_and_error_bars_(ggplot2)/#Helper%20functions)
+```{r}
+summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
+                      conf.interval=.95, .drop=TRUE) {
+  library(plyr)
+  length2 <- function (x, na.rm=FALSE) {
+        if (na.rm) sum(!is.na(x))
+        else       length(x)
+  }
+  datac <- ddply(data, groupvars, .drop=.drop,
+      .fun = function(xx, col) {
+        c(N    = length2(xx[[col]], na.rm=na.rm),
+          mean = mean   (xx[[col]], na.rm=na.rm),
+          sd   = sd     (xx[[col]], na.rm=na.rm)
+        )
+      },
+      measurevar
+    )
+  datac <- rename(datac, c("mean" = measurevar))
+  datac$se <- datac$sd / sqrt(datac$N)
+  ciMult <- qt(conf.interval/2 + .5, datac$N-1)
+    datac$ci <- datac$se * ciMult
+
+    return(datac)
+}
+pd<-position_dodge(width=0.1)
+TW_raw_sum<-summarySE(TW_raw, measurevar = "TW.g.", groupvars = c("GROUP", "DATE"))
+TW_raw_sum
+TW_COMBINED_FINAL<-ggplot(TW_raw_sum, aes(x=DATE, y=TW.g., group=GROUP, colour=GROUP)) + geom_errorbar(aes(ymin=TW.g.-se, ymax=TW.g.+se), width=.1, position=pd) + geom_line(position=pd, size = 1.5) + geom_point(position=pd, size = 1.5) + theme_classic() + ylab("Total Weight (g)")  + xlab("Date") + labs(title="Age-0 Northern Pike Growth Rates", subtitle = "Artemia vs. Zooplankton Diets") + annotate("text", label = c("A","B", "A", "B", "A", "B", "A", "B"), y = c(0.01, 0.06, 0.025, 0.11, 0.105, 0.24, 0.19, 0.485), x = c(1, 1, 2, 2, 3, 3, 4, 4), size=4, fontface  = 2) + scale_colour_manual(values = c("red", "black"))
+TW_COMBINED_FINAL+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14))
+
+```
+
+Welch's Two Sample t-test (weight vs. week)
+```{r}
+TW_T_TEST<-read.csv("~/TW_Analysis/CH_2T_TEST_TW_ANALYSIS.csv", header=TRUE)
+TW_T_TEST_W1<-subset(TW_T_TEST, DATE=="1W")
+TW_T_TEST_W2<-subset(TW_T_TEST, DATE=="2W")
+TW_T_TEST_W3<-subset(TW_T_TEST, DATE=="3W")
+TW_T_TEST_W4<-subset(TW_T_TEST, DATE=="4W")
+
+t_test_W1<-t.test(TW_T_TEST_W1$ARTEMIA, TW_T_TEST_W1$ZOOPLANKTON, var.equal = FALSE, paired=FALSE)
+t_test_W1
+t_test_W2<-t.test(TW_T_TEST_W2$ARTEMIA, TW_T_TEST_W2$ZOOPLANKTON, var.equal = FALSE, paired=FALSE)
+t_test_W2
+t_test_W3<-t.test(TW_T_TEST_W2$ARTEMIA, TW_T_TEST_W3$ZOOPLANKTON, var.equal = FALSE, paired=FALSE)
+t_test_W3
+t_test_W4<-t.test(TW_T_TEST_W4$ARTEMIA, TW_T_TEST_W4$ZOOPLANKTON, var.equal = FALSE, paired=FALSE)
+t_test_W4
+
+```
+
+Plot Growth (gram tissue day^-1 vs. week)
+
+```{r}
+TW_raw_GROWTH<-read.csv("~/TW_Analysis/CH_2_TW_GROWTH_Analysis.csv", header = TRUE)
+TW_raw_GROWTH_FINAL<-ggplot(TW_raw_GROWTH, aes(x=D_1, y=GROWTH, group=FEED, colour=FEED)) + geom_line(position=pd, size=1.5) + geom_point(position=pd, size=1.5) + theme_classic() + labs(title="Age-0 Northern Pike Growth Rates", subtitle = "Artemia vs. Zooplankton Diets", x = "Date", y = bquote('Growth'~(grams~day^-1))) + scale_y_continuous(breaks = seq(0, 0.032, by = 0.005))
+
+TW_raw_GROWTH_FINAL+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14))+ scale_colour_manual(values = c("red", "black"))
+```
+
+Welch's T-test (Growth)
+```{r}
+TW_Growth_T_TEST_DATA<-read.csv("~/TW_Analysis/CH_2_TW_GROWTH_LONG.csv", header=TRUE)
+t_test_GROWTH_FINAL<-t.test(TW_Growth_T_TEST_DATA$ARTEMIA, TW_Growth_T_TEST_DATA$ZOOPLANKTON, var.equal = FALSE, paired = FALSE)
+
+t_test_GROWTH_FINAL
+
+```
+
+#Temperature and Dissolved Oxygen Analysis
+
+Temperature
+```{r}
+TEMP_raw<-read.csv("~/TEMP_DO_ANALYSIS/CH_2_TEMP_ANALYSIS.csv", header=TRUE)
+
+TEMP_FINAL<-ggplot(TEMP_raw, aes(Time)) + geom_line(aes(y=TEMP_ARTEMIA_1, colour = "Artemia 1", group=1), size=1.5) + geom_line(aes(y = TEMP_ARTEMIA_2, colour = "Artemia 2", group = 1), size=1.5) + geom_line(aes(y = TEMP_ARTEMIA_3, colour = "Artemia 3", group = 1), size=1.5) + geom_line(aes(y = TEMP_ZOOPLANKTON_1, colour = "Zooplankton 1"), size = 1.5) + geom_line(aes(y = TEMP_ZOOPLANKTON_2, colour = "Zooplankton 2"), size=1.5) + geom_line(aes(y=TEMP_ZOOPLANKTON_3, colour = "Zooplankton 3"), size=1.5) + xlab("Time(Days)") + ylab(expression('Temperature('*~degree*C*')')) + labs(colour = 'Treatment') + labs(title = "Treatment Tank Temperatures", subtitle = "Artemia vs. Zooplankton") + theme_classic()
+
+TEMP_FINAL+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14))
+
+TEMP_long<-melt(TEMP_raw, id="Time")
+oneway.test(value~variable, data=TEMP_long)
+
+TEMP_long
+```
+
+
+Dissolved Oxygen
+```{r}
+DO_raw<-read.csv("~/TEMP_DO_ANALYSIS/CH_2_DO_ANALYSIS.csv", header=TRUE)
+DO_long<-melt(DO_raw, id="Time")
+oneway.test(value~variable, data=DO_long)
+
+DO_FINAL<-ggplot(DO_raw, aes(Time)) + geom_line(aes(y=DO_ARTEMIA_1, colour = "Artemia 1", group=1), size=1.5) + geom_line(aes(y = DO_ARTEMIA_2, colour = "Artemia 2", group = 1), size=1.5) + geom_line(aes(y = DO_ARTEMIA_3, colour = "Artemia 3", group = 1), size=1.5) + geom_line(aes(y = DO_ZOOPLANKTON_1, colour = "Zooplankton 1"), size=1.5) + geom_line(aes(y = DO_ZOOPLANKTON_2, colour = "Zooplankton 2"), size=1.5) + geom_line(aes(y=DO_ZOOPLANKTON_3, colour = "Zooplankton 3"), size=1.5) + xlab("Time(Days)") + labs(colour = 'Treatment', title = "Treatment Tank Dissolved Oxygen", subtitle = "Artemia vs. Zooplankton", y  = bquote('Dissolved Oxygen'~(mg~L^-1))) + theme_classic()
+
+DO_FINAL+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14))
+```
+
+#NMDS Analysis -  Comparing Beta Diversity between Samples
+
+##Treatments vs. Controls
+###Individual File: CH_2_Treats_Vs_Controls_NMDS.Rmd
+
+
+Combine all similar taxa by 'Genus'
+
+```{r}
+CH_2_ALL<-read.csv(file="~/CH_2_ALL_ASV_TABLE.csv",header=TRUE, check.names=FALSE, row.names = 1)
+
+CH_2_ALL<-as.matrix(CH_2_ALL)
+CH_2_ALL_otu<-otu_table(CH_2_ALL, taxa_are_rows = TRUE)
+
+CH_2_ALL_metadata<-read.csv(file="~/CH_2_ALL_metadata.csv", header=TRUE, check.names=FALSE, row.names = 1)
+
+CH_2_ALL_metadata<-sample_data(CH_2_ALL_metadata)
+
+CH_2_taxa<-read.csv(file = "~/CH_2_taxa.csv", header = TRUE, check.names = FALSE, row.names = 1)
+
+CH_2_taxa<-as.matrix(CH_2_taxa)
+CH_2_taxa_Phylo<-tax_table(CH_2_taxa)
+
+CH_2_ALL_Phylo<-phyloseq(CH_2_ALL_otu,CH_2_taxa_Phylo,CH_2_ALL_metadata)
+
+CH_2_ALL_melted<-tax_glom(CH_2_ALL_Phylo, "Genus")
+
+write.csv(otu_table(CH_2_ALL_melted), "CH_2_seqtab_ALL_COMBINED.csv")
+```
+
+
+
+A. Artemia (Pre-DF) Replicates vs. Replicates
+
+```{r}
+A1A2_Diet<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Artemia_vs_Cont/A1A2_Diet_NMDS.csv", header = TRUE, row.names = 1, check.names = FALSE)
+
+A1A2_Diet_metadata<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Artemia_vs_Cont/A1A2_Diet_metadata.csv", header = TRUE, check.names = FALSE)
+
+
+A1A2_t_Diet<-as.data.frame(t(A1A2_Diet))
+A1A2_t_Diet_rarefied<-as.data.frame(round(rrarefy(A1A2_t_Diet, 7000)))
+A1A2_Diet_dist<-as.matrix(vegdist(A1A2_t_Diet_rarefied, "bray"))
+A1A2_Diet_NMDS<-metaMDS(A1A2_Diet_dist)
+A1A2_Diet_MDS1<-A1A2_Diet_NMDS$points[,1]
+A1A2_Diet_MDS2<-A1A2_Diet_NMDS$points[,2]
+A1A2_Diet_NMDS$stress
+
+A1A2_Diet_NMDS<-data.frame(MDS1=A1A2_Diet_MDS1, MDS2 = A1A2_Diet_MDS2, Sample = A1A2_Diet_metadata$Sample, Treatment = A1A2_Diet_metadata$TREATMENT, Replicate = A1A2_Diet_metadata$Replicate, Week = A1A2_Diet_metadata$Week)
+
+A1A2_Diet_NMDS$Replicate<-as.character(A1A2_Diet_NMDS$Replicate)
+A1A2_Diet_NMDS$Week<-as.character(A1A2_Diet_NMDS$Week)
+
+#Replicates
+
+A1A2_Replicates<-ggplot(A1A2_Diet_NMDS, aes(x=MDS1, y = MDS2, col = Replicate)) + geom_point() + stat_ellipse() + theme_classic()+ labs(title = "Artemia Week 1 + 2") + theme(plot.title = element_text(size = 12, face = "bold")) + scale_color_manual(values = c("black", "red", "blue", "green", "pink"))
+
+A1A2_Replicates
+
+pairwise.adonis(A1A2_Diet_dist, factors = A1A2_Diet_metadata$Replicate)
+
+A1_Diet<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Artemia_vs_Cont/A1_Diet_NMDS.csv", header = TRUE, row.names = 1, check.names = FALSE)
+
+A1_Diet_metadata<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Artemia_vs_Cont/A1_Diet_metadata.csv", header = TRUE, check.names = FALSE)
+
+
+A1_t_Diet<-as.data.frame(t(A1_Diet))
+A1_t_Diet_rarefied<-as.data.frame(round(rrarefy(A1_t_Diet, 7000)))
+A1_Diet_dist<-as.matrix(vegdist(A1_t_Diet_rarefied, "bray"))
+A1_Diet_NMDS<-metaMDS(A1_Diet_dist)
+A1_Diet_MDS1<-A1_Diet_NMDS$points[,1]
+A1_Diet_MDS2<-A1_Diet_NMDS$points[,2]
+A1_Diet_NMDS$stress
+
+A1_Diet_NMDS<-data.frame(MDS1=A1_Diet_MDS1, MDS2 = A1_Diet_MDS2, Sample = A1_Diet_metadata$Sample, Treatment = A1_Diet_metadata$TREATMENT, Replicate = A1_Diet_metadata$Replicate, Week = A1_Diet_metadata$Week)
+
+A1_Diet_NMDS$Replicate<-as.character(A1_Diet_NMDS$Replicate)
+A1_Diet_NMDS$Week<-as.character(A1_Diet_NMDS$Week)
+
+#Replicates Week 1
+
+A1_Replicates<-ggplot(A1_Diet_NMDS, aes(x=MDS1, y = MDS2, col = Replicate)) + geom_point() + stat_ellipse() + theme_classic()+ labs(title = "Artemia Week 1") + theme(plot.title = element_text(size = 12, face = "bold")) + scale_color_manual(values = c("black", "red", "blue")) + geom_text(aes(label = "stress = 0.05"), x = -0.75, y  = 0.50, size = 4, color = "black")
+
+A1_Replicates
+
+pairwise.adonis(A1_Diet_dist, factors = A1_Diet_metadata$Replicate)
+
+A2_Diet<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Artemia_vs_Cont/A2_Diet_NMDS.csv", header = TRUE, row.names = 1, check.names = FALSE)
+
+A2_Diet_metadata<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Artemia_vs_Cont/A2_Diet_metadata.csv", header = TRUE, check.names = FALSE)
+
+
+A2_t_Diet<-as.data.frame(t(A2_Diet))
+A2_t_Diet_rarefied<-as.data.frame(round(rrarefy(A2_t_Diet, 7000)))
+A2_Diet_dist<-as.matrix(vegdist(A2_t_Diet_rarefied, "bray"))
+A2_Diet_NMDS<-metaMDS(A2_Diet_dist)
+A2_Diet_MDS1<-A2_Diet_NMDS$points[,1]
+A2_Diet_MDS2<-A2_Diet_NMDS$points[,2]
+A2_Diet_NMDS$stress
+
+A2_Diet_NMDS<-data.frame(MDS1=A2_Diet_MDS1, MDS2 = A2_Diet_MDS2, Sample = A2_Diet_metadata$Sample, Treatment = A2_Diet_metadata$TREATMENT, Replicate = A2_Diet_metadata$Replicate, Week = A2_Diet_metadata$Week)
+
+A2_Diet_NMDS$Replicate<-as.character(A2_Diet_NMDS$Replicate)
+A2_Diet_NMDS$Week<-as.character(A2_Diet_NMDS$Week)
+
+#Replicates Week 2
+
+A2_Replicates<-ggplot(A2_Diet_NMDS, aes(x=MDS1, y = MDS2, col = Replicate)) + geom_point() + stat_ellipse() + theme_classic()+ labs(title = "Artemia Week 2") + theme(plot.title = element_text(size = 12, face = "bold")) + scale_color_manual(values = c("black", "red", "black")) + geom_text(aes(label = "stress = 0.04"), x = -0.2, y = 0.48, size = 4, color = "black")
+
+A2_Replicates
+
+pairwise.adonis(A2_Diet_dist, factors = A2_Diet_metadata$Replicate)
+
+#Week
+
+A1A2_Week<-ggplot(A1A2_Diet_NMDS, aes(x=MDS1, y = MDS2, col = Week)) + geom_point() + stat_ellipse() + theme_classic()+ labs(title = "Artemia Week 1 + 2") + theme(plot.title = element_text(size = 12, face = "bold"))+ scale_color_manual(values = c("black", "red"))
+
+A1A2_Week
+
+pairwise.adonis(A1A2_Diet_dist, factors = A1A2_Diet_metadata$Week)
+
+```
+
+
+Artemia (DF) Replicates vs. Replicates
+
+```{r}
+#No Contamination
+
+A3A4_Diet_Only<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Artemia_vs_Cont/ART_W3W4_DIET.csv", header = TRUE, row.names = 1, check.names = FALSE)
+
+A3A4_Diet_Only_metadata<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Artemia_vs_Cont/ART_W3W4_Diet_Metadata.csv", header = TRUE, check.names = FALSE)
+A3A4_Diet_Only_metadata$Replicate<-as.character(A3A4_Diet_Only_metadata$Replicate)
+A3A4_Diet_Only_metadata$Week<-as.character(A3A4_Diet_Only_metadata$Week)
+
+A3A4_t_Diet_Only<-as.data.frame(t(A3A4_Diet_Only))
+A3A4_t_Diet_Only_rarefied<-as.data.frame(round(rrarefy(A3A4_t_Diet_Only, 7000)))
+A3A4_Diet_Only_dist<-as.matrix(vegdist(A3A4_t_Diet_Only_rarefied, "bray"))
+A3A4_Diet_Only_NMDS<-metaMDS(A3A4_Diet_Only_dist)
+A3A4_Diet_Only_MDS1<-A3A4_Diet_Only_NMDS$points[,1]
+A3A4_Diet_Only_MDS2<-A3A4_Diet_Only_NMDS$points[,2]
+A3A4_Diet_Only_NMDS$stress
+
+A3A4_Diet_Only_NMDS<-data.frame(MDS1=A3A4_Diet_Only_MDS1, MDS2 = A3A4_Diet_Only_MDS2, Sample = A3A4_Diet_Only_metadata$Sample, Treatment = A3A4_Diet_Only_metadata$Treatment, Replicate = A3A4_Diet_Only_metadata$Replicate, Week = A3A4_Diet_Only_metadata$Week)
+
+#Replicates
+
+A3A4_Diet_Only_Replicates<-ggplot(A3A4_Diet_Only_NMDS, aes(x=MDS1, y = MDS2, col = Replicate)) + geom_point() + stat_ellipse() + theme_classic()+ labs(title = "Artemia Week 3 + 4") + theme(plot.title = element_text(size = 12, face = "bold"))+ scale_color_manual(values = c("black", "red", "blue","green", "pink", "brown"))
+
+A3A4_Diet_Only_Replicates
+
+pairwise.adonis(A3A4_Diet_Only_dist, factors = A3A4_Diet_Only_metadata$Replicate)
+
+
+#Contamination
+
+A3A4_Diet_Only_C<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Artemia_vs_Cont/ART_W3W4_DIET_CONTAM.csv", header = TRUE, row.names = 1, check.names = FALSE)
+
+A3A4_Diet_Only_metadata_C<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Artemia_vs_Cont/ARTW3W4_CONTAM_Metadata.csv", header = TRUE, check.names = FALSE)
+A3A4_Diet_Only_metadata_C$Replicate<-as.character(A3A4_Diet_Only_metadata_C$Replicate)
+A3A4_Diet_Only_metadata_C$Week<-as.character(A3A4_Diet_Only_metadata_C$Week)
+
+A3A4_t_Diet_Only_C<-as.data.frame(t(A3A4_Diet_Only_C))
+A3A4_t_Diet_Only_rarefied_C<-as.data.frame(round(rrarefy(A3A4_t_Diet_Only_C, 7000)))
+A3A4_Diet_Only_dist_C<-as.matrix(vegdist(A3A4_t_Diet_Only_rarefied_C, "bray"))
+A3A4_Diet_Only_NMDS_C<-metaMDS(A3A4_Diet_Only_dist_C)
+A3A4_Diet_Only_MDS1_C<-A3A4_Diet_Only_NMDS_C$points[,1]
+A3A4_Diet_Only_MDS2_C<-A3A4_Diet_Only_NMDS_C$points[,2]
+A3A4_Diet_Only_NMDS_C$stress
+
+A3A4_Diet_Only_NMDS_C<-data.frame(MDS1=A3A4_Diet_Only_MDS1_C, MDS2 = A3A4_Diet_Only_MDS2_C, Sample = A3A4_Diet_Only_metadata_C$Sample, Treatment = A3A4_Diet_Only_metadata_C$Treatment, Replicate = A3A4_Diet_Only_metadata_C$Replicate, Week = A3A4_Diet_Only_metadata_C$Week)
+
+#Replicates
+
+A3A4_Diet_Only_Replicates_C<-ggplot(A3A4_Diet_Only_NMDS_C, aes(x=MDS1, y = MDS2, col = Replicate)) + geom_point() + stat_ellipse() + theme_classic()+ labs(title = "Artemia Week 3 + 4(Contamination)") + theme(plot.title = element_text(size = 12, face = "bold"))+ scale_color_manual(values = c("black", "red", "blue","green", "pink", "brown"))
+
+A3A4_Diet_Only_Replicates_C
+
+A3A4_Diet_Only_Week_C<-ggplot(A3A4_Diet_Only_NMDS_C, aes(x=MDS1, y = MDS2, col = Week)) + geom_point() + stat_ellipse() + theme_classic()+ labs(title = "Artemia Week 3 + 4(Contamination)") + theme(plot.title = element_text(size = 12, face = "bold"))+ scale_color_manual(values = c("black", "red", "blue","green", "pink", "brown"))
+
+A3A4_Diet_Only_Week_C
+
+pairwise.adonis(A3A4_Diet_Only_dist_C, factors = A3A4_Diet_Only_metadata_C$Replicate)
+
+#W3
+
+A3_Diet<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Artemia_vs_Cont/A3_Diet_NMDS.csv", header = TRUE, row.names = 1, check.names = FALSE)
+
+A3_Diet_metadata<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Artemia_vs_Cont/A3_Diet_metadata.csv", header = TRUE, check.names = FALSE)
+
+
+A3_t_Diet<-as.data.frame(t(A3_Diet))
+A3_t_Diet_rarefied<-as.data.frame(round(rrarefy(A3_t_Diet, 7000)))
+A3_Diet_dist<-as.matrix(vegdist(A3_t_Diet_rarefied, "bray"))
+A3_Diet_NMDS<-metaMDS(A3_Diet_dist)
+A3_Diet_MDS1<-A3_Diet_NMDS$points[,1]
+A3_Diet_MDS2<-A3_Diet_NMDS$points[,2]
+A3_Diet_NMDS$stress
+
+A3_Diet_NMDS<-data.frame(MDS1=A3_Diet_MDS1, MDS2 = A3_Diet_MDS2, Sample = A3_Diet_metadata$Sample, Treatment = A3_Diet_metadata$Treatment, Replicate = A3_Diet_metadata$Replicate, Week = A3_Diet_metadata$Week)
+
+A3_Diet_NMDS$Replicate<-as.character(A3_Diet_NMDS$Replicate)
+A3_Diet_NMDS$Week<-as.character(A3_Diet_NMDS$Week)
+
+#Replicates Week 3
+
+A3_Replicates<-ggplot(A3_Diet_NMDS, aes(x=MDS1, y = MDS2, col = Replicate)) + geom_point() + stat_ellipse() + theme_classic()+ labs(title = "Artemia Week 3") + theme(plot.title = element_text(size = 12, face = "bold")) + scale_color_manual(values = c("black", "red", "blue"))
+
+A3_Replicates
+
+pairwise.adonis(A3_Diet_dist, factors = A3_Diet_metadata$Replicate)
+
+#W4
+
+A4_Diet<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Artemia_vs_Cont/A4_Diet_NMDS.csv", header = TRUE, row.names = 1, check.names = FALSE)
+
+A4_Diet_metadata<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Artemia_vs_Cont/A4_Diet_metadata.csv", header = TRUE, check.names = FALSE)
+
+
+A4_t_Diet<-as.data.frame(t(A4_Diet))
+A4_t_Diet_rarefied<-as.data.frame(round(rrarefy(A4_t_Diet, 7000)))
+A4_Diet_dist<-as.matrix(vegdist(A4_t_Diet_rarefied, "bray"))
+A4_Diet_NMDS<-metaMDS(A4_Diet_dist)
+A4_Diet_MDS1<-A4_Diet_NMDS$points[,1]
+A4_Diet_MDS2<-A4_Diet_NMDS$points[,2]
+A4_Diet_NMDS$stress
+
+A4_Diet_NMDS<-data.frame(MDS1=A4_Diet_MDS1, MDS2 = A4_Diet_MDS2, Sample = A4_Diet_metadata$Sample, Treatment = A4_Diet_metadata$Treatment, Replicate = A4_Diet_metadata$Replicate, Week = A4_Diet_metadata$Week)
+
+A4_Diet_NMDS$Week<-as.character(A4_Diet_NMDS$Week)
+
+#NO REPLICATES FOR WEEK 4! (Contamination)
+     
+#Week
+
+A3A4_Diet_Only_Week<-ggplot(A3A4_Diet_Only_NMDS, aes(x=MDS1, y = MDS2, col = Week)) + geom_point() + stat_ellipse() + theme_classic()+ labs(title = "Artemia Week 3 + 4") + theme(plot.title = element_text(size = 12, face = "bold"))+ scale_color_manual(values = c("black", "red"))
+
+A3A4_Diet_Only_Week
+
+pairwise.adonis(A3A4_Diet_Only_dist, factors = A3A4_Diet_Only_metadata$Week)
+```
+
+Final Artemia (All 6 together)
+
+```{r}
+A_FINAL<-ggarrange(A1A2_Replicates, A1A2_Week, A3A4_Diet_Only_Replicates, A3A4_Diet_Only_Week, labels = c("A", "B", "C", "D", "E", "F"), common.legend = FALSE, legend = "right")
+
+A_FINAL
+
+A_FINAL_C<-ggarrange(A1A2_Replicates, A1A2_Week, A3A4_Diet_Only_Replicates_C, A3A4_Diet_Only_Week_C, labels = c("A", "B", "C", "D", "E", "F"), common.legend = FALSE, legend = "right")
+```
+
+
+Zooplankton (Pre-DF) Replicates vs. Replicates
+```{r}
+Z1Z2_Diet_Only<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Zoop_vs_Cont/Z1Z2_Diet.csv", header = TRUE, row.names = 1, check.names = FALSE)
+
+Z1Z2_Diet_Only_metadata<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Zoop_vs_Cont/Z1Z2_Diet_metadata.csv", header = TRUE, check.names = FALSE)
+Z1Z2_Diet_Only_metadata$Replicate<-as.character(Z1Z2_Diet_Only_metadata$Replicate)
+Z1Z2_Diet_Only_metadata$Week<-as.character(Z1Z2_Diet_Only_metadata$Week)
+
+Z1Z2_t_Diet_Only<-as.data.frame(t(Z1Z2_Diet_Only))
+Z1Z2_t_Diet_Only_rarefied<-as.data.frame(round(rrarefy(Z1Z2_t_Diet_Only, 7000)))
+Z1Z2_Diet_Only_dist<-as.matrix(vegdist(Z1Z2_t_Diet_Only_rarefied, "bray"))
+Z1Z2_Diet_Only_NMDS<-metaMDS(Z1Z2_Diet_Only_dist)
+Z1Z2_Diet_Only_MDS1<-Z1Z2_Diet_Only_NMDS$points[,1]
+Z1Z2_Diet_Only_MDS2<-Z1Z2_Diet_Only_NMDS$points[,2]
+Z1Z2_Diet_Only_NMDS$stress
+
+Z1Z2_Diet_Only_NMDS<-data.frame(MDS1=Z1Z2_Diet_Only_MDS1, MDS2 = Z1Z2_Diet_Only_MDS2, Sample = Z1Z2_Diet_Only_metadata$Sample, Treatment = Z1Z2_Diet_Only_metadata$Treatment, Replicate = Z1Z2_Diet_Only_metadata$Replicate, Week = Z1Z2_Diet_Only_metadata$Week)
+
+#Replicates
+
+Z1Z2_Diet_Only_Replicates<-ggplot(Z1Z2_Diet_Only_NMDS, aes(x=MDS1, y = MDS2, col = Replicate)) + geom_point() + stat_ellipse() + theme_classic()+ labs(title = "Zooplankton Week 1 + 2") + theme(plot.title = element_text(size = 12, face = "bold")) + scale_colour_manual(values = c("black", "red", "blue","green", "pink","brown"))
+
+Z1Z2_Diet_Only_Replicates
+
+pairwise.adonis(Z1Z2_Diet_Only_dist, factors = Z1Z2_Diet_Only_metadata$Replicate)
+
+Z1_Diet<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Zoop_vs_Cont/Z1_Diet_NMDS.csv", header = TRUE, row.names = 1, check.names = FALSE)
+
+Z1_Diet_metadata<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Zoop_vs_Cont/Z1_Diet_metadata.csv", header = TRUE, check.names = FALSE)
+
+Z1_t_Diet<-as.data.frame(t(Z1_Diet))
+Z1_t_Diet_rarefied<-as.data.frame(round(rrarefy(Z1_t_Diet, 7000)))
+Z1_Diet_dist<-as.matrix(vegdist(Z1_t_Diet_rarefied, "bray"))
+Z1_Diet_NMDS<-metaMDS(Z1_Diet_dist)
+Z1_Diet_MDS1<-Z1_Diet_NMDS$points[,1]
+Z1_Diet_MDS2<-Z1_Diet_NMDS$points[,2]
+Z1_Diet_NMDS$stress
+
+Z1_Diet_NMDS<-data.frame(MDS1=Z1_Diet_MDS1, MDS2 = Z1_Diet_MDS2, Sample = Z1_Diet_metadata$Sample, Treatment = Z1_Diet_metadata$Treatment, Replicate = Z1_Diet_metadata$Replicate, Week = Z1_Diet_metadata$Week)
+
+Z1_Diet_NMDS$Replicate<-as.character(Z1_Diet_NMDS$Replicate)
+Z1_Diet_NMDS$Week<-as.character(Z1_Diet_NMDS$Week)
+
+#Replicates Week 1
+
+Z1_Replicates<-ggplot(Z1_Diet_NMDS, aes(x=MDS1, y = MDS2, col = Replicate)) + geom_point() + stat_ellipse() + theme_classic()+ labs(title = "Zooplankton Week 1") + theme(plot.title = element_text(size = 12, face = "bold")) + scale_color_manual(values = c("black", "red", "blue"))
+
+Z1_Replicates
+
+pairwise.adonis(Z1_Diet_dist, factors = Z1_Diet_metadata$Replicate)
+
+Z2_Diet<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Zoop_vs_Cont/Z2_Diet_NMDS.csv", header = TRUE, row.names = 1, check.names = FALSE)
+
+Z2_Diet_metadata<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Zoop_vs_Cont/Z2_Diet_metadata.csv", header = TRUE, check.names = FALSE)
+
+
+Z2_t_Diet<-as.data.frame(t(Z2_Diet))
+Z2_t_Diet_rarefied<-as.data.frame(round(rrarefy(Z2_t_Diet, 7000)))
+Z2_Diet_dist<-as.matrix(vegdist(Z2_t_Diet_rarefied, "bray"))
+Z2_Diet_NMDS<-metaMDS(Z2_Diet_dist)
+Z2_Diet_MDS1<-Z2_Diet_NMDS$points[,1]
+Z2_Diet_MDS2<-Z2_Diet_NMDS$points[,2]
+Z2_Diet_NMDS$stress
+
+Z2_Diet_NMDS<-data.frame(MDS1=Z2_Diet_MDS1, MDS2 = Z2_Diet_MDS2, Sample = Z2_Diet_metadata$Sample, Treatment = Z2_Diet_metadata$Treatment, Replicate = Z2_Diet_metadata$Replicate, Week = Z2_Diet_metadata$Week)
+
+Z2_Diet_NMDS$Replicate<-as.character(Z2_Diet_NMDS$Replicate)
+Z2_Diet_NMDS$Week<-as.character(Z2_Diet_NMDS$Week)
+
+#Replicates Week 2
+
+Z2_Replicates<-ggplot(Z2_Diet_NMDS, aes(x=MDS1, y = MDS2, col = Replicate)) + geom_point() + stat_ellipse() + theme_classic()+ labs(title = "Zooplankton Week 2") + theme(plot.title = element_text(size = 12, face = "bold")) + scale_color_manual(values = c("black", "red", "blue")) + geom_text(aes(label = "stress = 0.06"), x = -0.6, y = 0.48, size = 4, color = "black")
+
+Z2_Replicates
+
+pairwise.adonis(Z2_Diet_dist, factors = Z2_Diet_metadata$Replicate)
+
+#Week
+
+Z1Z2_Diet_Only_Week<-ggplot(Z1Z2_Diet_Only_NMDS, aes(x=MDS1, y = MDS2, col = Week)) + geom_point() + stat_ellipse() + theme_classic()+ labs(title = "Zooplankton Week 1 + 2") + theme(plot.title = element_text(size = 12, face = "bold")) + scale_colour_manual(values = c("black", "red"))
+
+Z1Z2_Diet_Only_Week
+
+pairwise.adonis(Z1Z2_Diet_Only_dist, factors = Z1Z2_Diet_Only_metadata$Week)
+```
+
+
+Zooplankton (DF) Replicates vs. Replicates
+
+```{r}
+
+Z3Z4_Diet_Only<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Zoop_vs_Cont/Z3Z4_Diet.csv", header = TRUE, row.names = 1, check.names = FALSE)
+
+Z3Z4_Diet_Only_metadata<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Zoop_vs_Cont/Z3Z4_Diet_metadata.csv", header = TRUE, check.names = FALSE)
+Z3Z4_Diet_Only_metadata$Replicate<-as.character(Z3Z4_Diet_Only_metadata$Replicate)
+Z3Z4_Diet_Only_metadata$Week<-as.character(Z3Z4_Diet_Only_metadata$Week)
+
+Z3Z4_t_Diet_Only<-as.data.frame(t(Z3Z4_Diet_Only))
+Z3Z4_t_Diet_Only_rarefied<-as.data.frame(round(rrarefy(Z3Z4_t_Diet_Only, 7000)))
+Z3Z4_Diet_Only_dist<-as.matrix(vegdist(Z3Z4_t_Diet_Only_rarefied, "bray"))
+Z3Z4_Diet_Only_NMDS<-metaMDS(Z3Z4_Diet_Only_dist)
+Z3Z4_Diet_Only_MDS1<-Z3Z4_Diet_Only_NMDS$points[,1]
+Z3Z4_Diet_Only_MDS2<-Z3Z4_Diet_Only_NMDS$points[,2]
+Z3Z4_Diet_Only_NMDS$stress
+
+Z3Z4_Diet_Only_NMDS<-data.frame(MDS1=Z3Z4_Diet_Only_MDS1, MDS2 = Z3Z4_Diet_Only_MDS2, Sample = Z3Z4_Diet_Only_metadata$Sample, Treatment = Z3Z4_Diet_Only_metadata$Treatment, Replicate = Z3Z4_Diet_Only_metadata$Replicate, Week = Z3Z4_Diet_Only_metadata$Week)
+
+#Replicates
+
+Z3Z4_Diet_Only_Replicates<-ggplot(Z3Z4_Diet_Only_NMDS, aes(x=MDS1, y = MDS2, col = Replicate)) + geom_point() + stat_ellipse() + theme_classic() + scale_colour_manual(values = c("black", "red", "blue","green", "pink","brown"))+ labs(title = "Zooplankton Week 3 + 4") + theme(plot.title = element_text(size = 12, face = "bold"))
+
+Z3Z4_Diet_Only_Replicates
+
+pairwise.adonis(Z3Z4_Diet_Only_dist, factors = Z3Z4_Diet_Only_metadata$Replicate)
+
+Z3_Diet<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Zoop_vs_Cont/Z3_Diet_NMDS.csv", header = TRUE, row.names = 1, check.names = FALSE)
+
+Z3_Diet_metadata<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Zoop_vs_Cont/Z3_Diet_metadata.csv", header = TRUE, check.names = FALSE)
+
+Z3_t_Diet<-as.data.frame(t(Z3_Diet))
+Z3_t_Diet_rarefied<-as.data.frame(round(rrarefy(Z3_t_Diet, 7000)))
+Z3_Diet_dist<-as.matrix(vegdist(Z3_t_Diet_rarefied, "bray"))
+Z3_Diet_NMDS<-metaMDS(Z3_Diet_dist)
+Z3_Diet_MDS1<-Z3_Diet_NMDS$points[,1]
+Z3_Diet_MDS2<-Z3_Diet_NMDS$points[,2]
+Z3_Diet_NMDS$stress
+
+Z3_Diet_NMDS<-data.frame(MDS1=Z3_Diet_MDS1, MDS2 = Z3_Diet_MDS2, Sample = Z3_Diet_metadata$Sample, Treatment = Z3_Diet_metadata$Treatment, Replicate = Z3_Diet_metadata$Replicate, Week = Z3_Diet_metadata$Week)
+
+Z3_Diet_NMDS$Replicate<-as.character(Z3_Diet_NMDS$Replicate)
+Z3_Diet_NMDS$Week<-as.character(Z3_Diet_NMDS$Week)
+
+#Replicates Week 3
+
+Z3_Replicates<-ggplot(Z3_Diet_NMDS, aes(x=MDS1, y = MDS2, col = Replicate)) + geom_point() + stat_ellipse() + theme_classic()+ labs(title = "Zooplankton Week 3") + theme(plot.title = element_text(size = 12, face = "bold")) + scale_color_manual(values = c("black", "red", "blue"))
+
+Z3_Replicates
+
+pairwise.adonis(Z3_Diet_dist, factors = Z3_Diet_metadata$Replicate)
+
+Z4_Diet<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Zoop_vs_Cont/Z4_Diet_NMDS.csv", header = TRUE, row.names = 1, check.names = FALSE)
+
+Z4_Diet_metadata<-read.csv(file = "~/CH_2_NMDS/Fish_vs_Control/Zoop_vs_Cont/Z4_Diet_metadata.csv", header = TRUE, check.names = FALSE)
+
+
+Z4_t_Diet<-as.data.frame(t(Z4_Diet))
+Z4_t_Diet_rarefied<-as.data.frame(round(rrarefy(Z4_t_Diet, 7000)))
+Z4_Diet_dist<-as.matrix(vegdist(Z4_t_Diet_rarefied, "bray"))
+Z4_Diet_NMDS<-metaMDS(Z4_Diet_dist)
+Z4_Diet_MDS1<-Z4_Diet_NMDS$points[,1]
+Z4_Diet_MDS2<-Z4_Diet_NMDS$points[,2]
+Z4_Diet_NMDS$stress
+
+Z4_Diet_NMDS<-data.frame(MDS1=Z4_Diet_MDS1, MDS2 = Z4_Diet_MDS2, Sample = Z4_Diet_metadata$Sample, Treatment = Z4_Diet_metadata$Treatment, Replicate = Z4_Diet_metadata$Replicate, Week = Z4_Diet_metadata$Week)
+
+Z4_Diet_NMDS$Replicate<-as.character(Z4_Diet_NMDS$Replicate)
+Z4_Diet_NMDS$Week<-as.character(Z4_Diet_NMDS$Week)
+
+#Replicates Week 4
+
+Z4_Replicates<-ggplot(Z4_Diet_NMDS, aes(x=MDS1, y = MDS2, col = Replicate)) + geom_point() + stat_ellipse() + theme_classic()+ labs(title = "Zooplankton Week 4") + theme(plot.title = element_text(size = 12, face = "bold")) + scale_color_manual(values = c("black", "red", "blue"))
+
+Z4_Replicates
+
+pairwise.adonis(Z4_Diet_dist, factors = Z4_Diet_metadata$Replicate)
+
+#Week
+
+Z3Z4_Diet_Only_Week<-ggplot(Z3Z4_Diet_Only_NMDS, aes(x=MDS1, y = MDS2, col = Week)) + geom_point() + stat_ellipse() + theme_classic() + labs(title = "Zooplankton Week 3 + 4") + theme(plot.title = element_text(size = 12, face = "bold"))+ scale_colour_manual(values = c("black", "red"))
+
+Z3Z4_Diet_Only_Week
+
+pairwise.adonis(Z3Z4_Diet_Only_dist, factors = Z3Z4_Diet_Only_metadata$Week)
+```
+
+Final Zoop (All 6 together)
+
+```{r}
+Z_FINAL<-ggarrange(Z1Z2_Diet_Only_Replicates, Z1Z2_Diet_Only_Week, Z3Z4_Diet_Only_Replicates, Z3Z4_Diet_Only_Week, labels = c("A", "B", "C", "D", "E", "F"), common.legend = FALSE, legend = "right")
+
+Z_FINAL
+```
+
+##Treatments vs. ALL
+###Individual File: CH_2_ART_vs_ZOOP W1W2 + W3W4 NMDS.Rmd
+
+ZOOP + ART ALL (W0-W4)
+
+```{r}
+ARTZOOP_ALL_ASV<-read.csv(file = "~/CH_2_NMDS/Treatments_vs_ALL/ARTZOOP_ALL.csv", header = TRUE, row.names = 1, check.names = FALSE)
+
+
+ARTZOOP_ALL_metadata<-read.csv(file = "~/CH_2_NMDS/Treatments_vs_ALL/ARTZOOP_ALL_Metadata.csv", header = TRUE, check.names = FALSE)
+
+ARTZOOP_t_ALL<-as.data.frame(t(ARTZOOP_ALL_ASV))
+ARTZOOP_t_ALL_Rarefied<-as.data.frame(round(rrarefy(ARTZOOP_t_ALL, 7000)))
+ARTZOOP_ALL_dist<-as.matrix(vegdist(ARTZOOP_t_ALL_Rarefied, "bray"))
+ARTZOOP_ALL_NMDS<-metaMDS(ARTZOOP_ALL_dist)
+ARTZOOP_ALL_MDS1<-ARTZOOP_ALL_NMDS$points[,1]
+ARTZOOP_ALL_MDS2<-ARTZOOP_ALL_NMDS$points[,2]
+ARTZOOP_ALL_NMDS$stress
+
+ARTZOOP_ALL_NMDS<-data.frame(MDS1=ARTZOOP_ALL_MDS1, MDS2 = ARTZOOP_ALL_MDS2, Treatment = ARTZOOP_ALL_metadata$Treatment)
+
+ARTZOOP_ALL<-ggplot(ARTZOOP_ALL_NMDS, aes(x=MDS1, y = MDS2, col = Treatment)) + geom_point(size=3) + stat_ellipse(size=1.5) + theme_classic()+ labs(title = "Artemia vs. Zooplankton (All Weeks)", subtitle = "Larval Northern Pike Gut Microbiota") + theme(plot.title = element_text(size = 14, face = "bold")) + scale_color_manual(values = c("red","blue", "green", "midnightblue", "black", "darkslategray2", "darkslategray3", "darkslategray4", "darkslategray")) + geom_text(aes(label = "stress = 0.11"), x = -0.25, y = 0.5, size = 5, color = "black")
+
+ARTZOOP_ALL$labels$colour<-"Treatment/Week"
+
+ARTZOOP_ALL+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14), legend.text = element_text(size=14), legend.title = element_text(size=16))
+
+pairwise.adonis(ARTZOOP_ALL_dist, factors = ARTZOOP_ALL_NMDS$Treatment)
+
+#Testing for Group Homogeneity of Variance (betadisper &  permutest):
+
+ARTZOOP_ALL_dist<-vegdist(ARTZOOP_t_ALL_Rarefied, "bray")
+ARTZOOP_ALL_dist_disper<-betadisper(ARTZOOP_ALL_dist,  group = ARTZOOP_ALL_NMDS$Treatment)
+ARTZOOP_ALL_dist_permutest<-permutest(ARTZOOP_ALL_dist_disper, group = ARTZOOP_ALL_NMDS$Treatment,  pairwise = TRUE, permutation = 999)
+
+ARTZOOP_ALL_dist_permutest
+
+#Results = significant, BUT looking at NMDS shows that centroids do not overlap, thus findings are still valid.
+```
+
+ZOOP + ART ALL (W0-W4) + CONTAMINATION
+
+```{r}
+ARTZOOP_ALL_ASV_C<-read.csv(file = "~/CH_2_NMDS/Treatments_vs_ALL/ARTZOOP_ALL_CONTAM.csv", header = TRUE, row.names = 1, check.names = FALSE)
+
+ARTZOOP_ALL_metadata_C<-read.csv(file = "~/CH_2_NMDS/Treatments_vs_ALL/ARTZOOP_ALL_CONTAM_Metadata.csv", header = TRUE, check.names = FALSE)
+
+ARTZOOP_t_ALL_C<-as.data.frame(t(ARTZOOP_ALL_ASV_C))
+ARTZOOP_t_ALL_Rarefied_C<-as.data.frame(round(rrarefy(ARTZOOP_t_ALL_C, 7000)))
+ARTZOOP_ALL_dist_C<-as.matrix(vegdist(ARTZOOP_t_ALL_Rarefied_C, "bray"))
+ARTZOOP_ALL_NMDS_C<-metaMDS(ARTZOOP_ALL_dist_C)
+ARTZOOP_ALL_MDS1_C<-ARTZOOP_ALL_NMDS_C$points[,1]
+ARTZOOP_ALL_MDS2_C<-ARTZOOP_ALL_NMDS_C$points[,2]
+ARTZOOP_ALL_NMDS_C$stress
+
+ARTZOOP_ALL_NMDS_C<-data.frame(MDS1=ARTZOOP_ALL_MDS1_C, MDS2 = ARTZOOP_ALL_MDS2_C, Treatment = ARTZOOP_ALL_metadata_C$Treatment)
+
+ARTZOOP_ALL_C<-ggplot(ARTZOOP_ALL_NMDS_C, aes(x=MDS1, y = MDS2, col = Treatment)) + geom_point(size=3) + stat_ellipse(size=1.5) + theme_classic()+ labs(title = "Artemia vs. Zooplankton (All Weeks + Contamination)", subtitle = "Larval Northern Pike Gut Microbiota") + theme(plot.title = element_text(size = 14, face = "bold")) + scale_color_manual(values = c("red","blue", "green", "midnightblue", "black", "darkslategray2", "darkslategray3", "darkslategray4", "darkslategray")) + geom_text(aes(label = "stress = 0.13"), x = -0.4, y = 0.5, size = 5, color = "black")
+
+ARTZOOP_ALL_C$labels$colour<-"Treatment/Week"
+
+ARTZOOP_ALL_C + theme(axis.text = element_text(size=14), axis.title = element_text(size=14), legend.text = element_text(size=14), legend.title = element_text(size=16))
+
+pairwise.adonis(ARTZOOP_ALL_dist_C, factors = ARTZOOP_ALL_NMDS_C$Treatment)
+
+#Testing for Group Homogeneity of Variance (betadisper &  permutest):
+
+ARTZOOP_ALL_dist_C<-(vegdist(ARTZOOP_t_ALL_Rarefied_C, "bray"))
+ARTZOOP_ALL_dist_disper_C<-betadisper(ARTZOOP_ALL_dist_C,  group = ARTZOOP_ALL_NMDS_C$Treatment)
+ARTZOOP_ALL_dist_permutest_C<-permutest(ARTZOOP_ALL_dist_disper_C, group = ARTZOOP_ALL_NMDS$Treatment,  pairwise = TRUE, permutation = 999)
+
+ARTZOOP_ALL_dist_permutest_C
+
+#Results = significant, BUT looking at NMDS shows that centroids do not overlap, thus findings are still valid.
+```
+
+Replicates Graphs
+
+```{r}
+ggarrange(A1_Replicates, A2_Replicates, Z2_Replicates, labels = c("A", "B", "C"), common.legend = FALSE, legend = "right")
+```
+
+
+#Rarefaction Analysis - Determining Sequencing Depth
+
+##All Samples
+###Individual File: CH_2_Rarefaction_Alpha_Diversity.Rmd
+
+*Initial Analysis is completed with `biom-format` and `mothur` commands using `bash` commands. Please refer to `biom_mothur_code.txt` in pathway `~/Dropbox/bdgallo_MS_SUNYESF/NON_R_Scripts` for information*
+
+*The final product fom these commands is `CH_2_ALL_ASV_Table.groups.rarefaction`*
+
+CH.2 Rarefaction (All)
+```{r}
+CH_2_Rarefaction_data<-read.table("~/CH_2_Rarefaction_Alpha_Diversity/CH_2_seqtab_ALL_COMBINED.groups.rarefaction", header=TRUE)
+CH_2_Rarefaction_ColumnsPrimary<-CH_2_Rarefaction_data[grepl("user", names(CH_2_Rarefaction_data))]
+CH_2_Rarefaction_numSampled<-CH_2_Rarefaction_data[, c("numsampled")]
+CH_2_Rarefaction_data<-cbind (CH_2_Rarefaction_numSampled, CH_2_Rarefaction_ColumnsPrimary)
+CH_2_Rarefaction_long<-melt(CH_2_Rarefaction_data, id.vars="CH_2_Rarefaction_numSampled")
+write.csv(CH_2_Rarefaction_long, "CH_2_Rarefaction_long.csv")
+
+#Offload data as .csv file, manually input treatment information in separate column
+#Once complete, re-upload .csv as data frame, overwriting initial file of same name
+
+CH_2_Rarefaction_long<-read.csv(file = "~/Dropbox/bdgallo_MS_SUNYESF/Ch2_Data_Files_Analysis/CH_2_Rarefaction_Alpha_Diversity/CH_2_Rarefaction_long.csv", header = TRUE)
+```
+
+Fish Only Rarefaction
+```{r}
+#Take CH_2_Rarefaction_long and delete all environmental data. Rename and upload.
+
+CH_2_FishOnly_Rarefaction_long<-read.csv(file = "~/CH_2_Rarefaction_Alpha_Diversity/CH_2_FishOnly_Rarefaction_long.csv", header = TRUE)
+
+CH_2_FishOnly_Rarefaction_long$Treatment<-factor(CH_2_FishOnly_Rarefaction_long$Treatment, levels = c("Pre-Food", "Artemia1W", "Artemia2W", "Artemia3W", "Artemia4W", "Zooplankton1W", "Zooplankton2W", "Zooplankton3W", "Zooplankton4W"))
+
+CH_2_FishOnly_rarefaction<-ggplot(data=CH_2_FishOnly_Rarefaction_long, aes(x=CH_2_Rarefaction_numSampled, y=value, color=Treatment)) + geom_line(aes(group=variable), size=1.5) + xlab("Number of Sequences") + ylab("ASVs (100%)") + guides (color=guide_legend("Treatment")) + theme_classic() + labs(title="Rarefaction Curves", subtitle = "Northern Pike Diet") + scale_color_manual(values = c("black", "red", "blue", "blue4", "orange", "deeppink", "brown", "cyan","darksalmon")) + guides(linetype = guide_legend(override.aes = list(size = 1.5)))
+
+CH_2_FishOnly_rarefaction
+```
+
+#Taxa  Analysis - Determining Top 10 Taxa for Treatments
+##All Samples
+###Individual File: CH_2_taxa_graphs.Rmd
+
+*Note that taxa excel sheet was cleaned manually by removing all NA calls in Kingdom and Phylum columns. Additionally, any Kingdom tracing to Eukaryotes/Archaea were also removed*
+
+Normalized Top 10 Taxa Bar Graphs (ALL):
+
+```{r}
+ALL_ASV_C<-read.csv(file = "~/CH_2_seqtab_ALL_COMBINED.csv", header = TRUE, row.names = 1, check.names = FALSE)
+ALL_ASV_t_C<-as.data.frame(t(ALL_ASV_C))
+ALL_ASV_t_Rarefied_C<-as.data.frame(round(rrarefy(ALL_ASV_t_C,7000)))
+ALL_ASV_Rarefied_C<-t(ALL_ASV_t_Rarefied_C)
+ALL_Rarefied_C<-as.matrix(ALL_ASV_Rarefied_C)
+ALL_Norm_Phylo_C<-otu_table(ALL_Rarefied_C, taxa_are_rows = TRUE)
+
+CH_2_taxa_C<-read.csv(file = "~/CH_2_taxa.csv", header = TRUE, check.names = FALSE, row.names = 1)
+CH_2_taxa_C<-as.matrix(CH_2_taxa_C)
+CH_2_taxa_Phylo_C = tax_table(CH_2_taxa_C)
+
+ALL_metadata_C<-read.csv(file = "~/CH_2_ALL_metadata.csv", header = TRUE, row.names = 1, check.names = FALSE)
+ALL_metadata_C<-sample_data(ALL_metadata_C)
+
+CH_2_Diet_Phylo_Norm_C<-phyloseq(ALL_Norm_Phylo_C, CH_2_taxa_Phylo_C, ALL_metadata_C)
+
+CH_2_taxa_top10_Norm_C<-names(sort(taxa_sums(CH_2_Diet_Phylo_Norm_C), decreasing = TRUE)) [1:10]
+
+CH_2_Diet_Phylo.top10_Norm_C<-transform_sample_counts(CH_2_Diet_Phylo_Norm_C, function(ALL_Norm_Phylo_C) ALL_Norm_Phylo_C/sum(ALL_Norm_Phylo_C))
+
+CH_2_Diet_Phylo.top10_Norm_C<-prune_taxa(CH_2_taxa_top10_Norm_C,CH_2_Diet_Phylo.top10_Norm_C)
+
+sample_data(CH_2_Diet_Phylo.top10_Norm_C)$Treatment<-factor(sample_data(CH_2_Diet_Phylo.top10_Norm_C)$Treatment, levels = c("Artemia", "Zooplankton", "Artemia Water Control Week 1+2", "Zooplankton Water Control Week 1+2", "Artemia Water Control Week 3+4", "Zooplankton Water Control Week 3+4", "Dry Food", "Week 0", "Artemia/Week 1", "Zooplankton/Week 1", "Artemia/Week 2", "Zooplankton/Week 2", "Artemia/Week 3", "Zooplankton/Week 3", "Artemia/Week 4", "Zooplankton/Week 4"))
+
+CH_2_Top10_Norm_C<-plot_bar(CH_2_Diet_Phylo.top10_Norm_C, x = "Treatment", fill = "Genus") + theme_classic()
+
+CH_2_Top10_Norm_C + geom_bar(aes(color=Genus, fill=Genus), stat="identity", position = "stack") + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+write.csv(otu_table(CH_2_Diet_Phylo.top10_Norm_C), "CH_2_Top10_Taxa_Percent_C.csv")
+#Offload Top10 ASV data - calculate average for each group so that y-axis = 0-1 (e.g. 0 - 100%). Also calculate SE and reupload data.
+```
+
+ALL (Normalized - No contamination)
+
+```{r}
+ALL_ASV<-read.csv(file = "~/Taxa_Graphs/CH_2_seqtab_ALL_COMBINED_No_Contamination.csv", header = TRUE, row.names = 1, check.names = FALSE)
+ALL_ASV_t<-as.data.frame(t(ALL_ASV))
+ALL_ASV_t_Rarefied<-as.data.frame(round(rrarefy(ALL_ASV_t,7000)))
+ALL_ASV_Rarefied<-t(ALL_ASV_t_Rarefied)
+ALL_Rarefied<-as.matrix(ALL_ASV_Rarefied)
+ALL_Norm_Phylo<-otu_table(ALL_Rarefied, taxa_are_rows = TRUE)
+
+CH_2_taxa<-read.csv(file = "~/CH_2_taxa.csv", header = TRUE, check.names = FALSE, row.names = 1)
+CH_2_taxa<-as.matrix(CH_2_taxa)
+CH_2_taxa_Phylo = tax_table(CH_2_taxa)
+
+ALL_metadata<-read.csv(file = "~/Taxa_Graphs/CH_2_ALL_metadata_No_contamination.csv", header = TRUE, row.names = 1, check.names = FALSE)
+ALL_metadata<-sample_data(ALL_metadata)
+
+CH_2_Diet_Phylo_Norm<-phyloseq(ALL_Norm_Phylo, CH_2_taxa_Phylo, ALL_metadata)
+
+CH_2_taxa_top10_Norm<-names(sort(taxa_sums(CH_2_Diet_Phylo_Norm), decreasing = TRUE)) [1:10]
+
+CH_2_Diet_Phylo.top10_Norm<-transform_sample_counts(CH_2_Diet_Phylo_Norm, function(ALL_Norm_Phylo) ALL_Norm_Phylo/sum(ALL_Norm_Phylo))
+
+CH_2_Diet_Phylo.top10_Norm<-prune_taxa(CH_2_taxa_top10_Norm,CH_2_Diet_Phylo.top10_Norm)
+
+sample_data(CH_2_Diet_Phylo.top10_Norm)$Treatment<-factor(sample_data(CH_2_Diet_Phylo.top10_Norm)$Treatment, levels = c("Artemia", "Zooplankton", "Artemia Water Control Week 1+2", "Zooplankton Water Control Week 1+2", "Artemia Water Control Week 3+4", "Zooplankton Water Control Week 3+4", "Dry Food", "Week 0", "Artemia/Week 1", "Zooplankton/Week 1", "Artemia/Week 2", "Zooplankton/Week 2", "Artemia/Week 3", "Zooplankton/Week 3", "Artemia/Week 4", "Zooplankton/Week 4"))
+
+CH_2_Top10_Norm<-plot_bar(CH_2_Diet_Phylo.top10_Norm, x = "Treatment", fill = "Genus") + theme_classic()
+
+CH_2_Top10_Norm + geom_bar(aes(color=Genus, fill=Genus), stat="identity", position = "stack") + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+write.csv(otu_table(CH_2_Diet_Phylo.top10_Norm), "CH_2_Top10_Taxa_Percent.csv")
+#Offload Top10 ASV data - calculate average for each group so that y-axis = 0-1 (e.g. 0 - 100%). Also calculate SE and reupload data.
+
+```
+
+All (+ Contamination)
+```{r}
+#ENV
+
+ZOOP_Palette<-function (n) 
+{
+    x <- ramp(seq.int(0, 1, length.out = n))
+    if (ncol(x) == 4L) 
+        rgb(x[, 1L], x[, 2L], x[, 3L], x[, 4L], maxColorValue = 255)
+    else rgb(x[, 1L], x[, 2L], x[, 3L], maxColorValue = 255)
+}
+
+CH_2_Top10_Taxa_Percent_ENV_C<-read.csv(file = "~/Taxa_Graphs/CH_2_Top10_ENV_COMBINED_C.csv", header=TRUE, check.names = FALSE)
+
+CH_2_Top10_Taxa_Percent_ENV_C$Treatment<-factor(CH_2_Top10_Taxa_Percent_ENV_C$Treatment, levels = c("Artemia Water Control Week 1+2",  "Artemia", "Artemia Water Control Week 3+4", "Dry Food", "Zooplankton Water Control Week 1+2", "Zooplankton", "Zooplankton Water Control Week 3+4"))
+
+colourCount<-length(unique(CH_2_Top10_Taxa_Percent_ENV_C$Genus))
+getPalette<-colorRampPalette(brewer.pal(8, "Set1"))
+
+CH_2_Top10_Taxa_Percent_Graph_ENV_C<-ggplot(CH_2_Top10_Taxa_Percent_ENV_C, aes(x=Treatment, y = AVG, fill = Genus)) + geom_bar( colour = "black", stat="identity", position = position_dodge()) + theme_classic() + scale_fill_manual(values = getPalette(colourCount)) + labs(title = "Environmental Samples (+ Contamination)", subtitle = "Top 10 Bacterial Genera", x = "", y = "Average ASV Abundance") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + geom_errorbar(aes(ymin=AVG-SE, ymax = AVG+SE), width=.2, position=position_dodge(.9))
+
+CH_2_Top10_Taxa_Percent_Graph_ENV_C<-CH_2_Top10_Taxa_Percent_Graph_ENV_C + theme(plot.title = element_text(size = 14), axis.text = element_text(size=14), axis.title = element_text(size=14), legend.title = element_text(size=18), legend.text = element_text(size=16))
+
+#FISH
+CH_2_Top10_Taxa_Percent_C<-read.csv(file = "~/Taxa_Graphs/CH_2_Top10_Taxa_FISH_COMBINED_C.csv", header=TRUE, check.names = FALSE)
+
+CH_2_Top10_Taxa_Percent_C$Treatment<-factor(CH_2_Top10_Taxa_Percent_C$Treatment, levels = c("Week 0", "Artemia/Week 1", "Artemia/Week 2", "Artemia/Week 3", "Artemia/Week 4", "Zooplankton/Week 1", "Zooplankton/Week 2", "Zooplankton/Week 3", "Zooplankton/Week 4"))
+
+colourCount<-length(unique(CH_2_Top10_Taxa_Percent_C$Genus))
+getPalette<-colorRampPalette(brewer.pal(8, "Set1"))
+
+CH_2_Top10_Taxa_Percent_Graph_C<-ggplot(CH_2_Top10_Taxa_Percent_C, aes(x=Treatment, y = AVG, fill = Genus)) + geom_bar( colour = "black", stat="identity", position = position_dodge()) + theme_classic() + scale_fill_manual(values = getPalette(colourCount)) + labs(title = "Larval Northern Pike Gut Microbiota (+ Contamination)", subtitle = "Top 10 Bacterial Genera", x = "", y = "Average ASV Abundance") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + geom_errorbar(aes(ymin=AVG-SE, ymax = AVG+SE), width=.2, position=position_dodge(.9))
+
+CH_2_Top10_Taxa_Percent_Graph_C<-CH_2_Top10_Taxa_Percent_Graph_C+ theme(plot.title = element_text(size = 14), axis.text = element_text(size=14), axis.title = element_text(size=14), legend.title = element_text(size=18), legend.text = element_text(size=16))
+
+#COMBINE
+
+ggarrange(CH_2_Top10_Taxa_Percent_Graph_ENV_C, CH_2_Top10_Taxa_Percent_Graph_C, labels = c("A", "B"), common.legend = TRUE, legend = "right", nrow = 2)
+```
+
+All
+```{r}
+#ENV
+
+CH_2_Top10_Taxa_Percent_ENV<-read.csv(file = "~/Taxa_Graphs/CH_2_Top10_ENV_COMBINED.csv", header=TRUE, check.names = FALSE)
+
+CH_2_Top10_Taxa_Percent_ENV$Treatment<-factor(CH_2_Top10_Taxa_Percent_ENV$Treatment, levels = c("Artemia Water Control Week 1+2",  "Artemia", "Artemia Water Control Week 3+4", "Dry Food", "Zooplankton Water Control Week 1+2", "Zooplankton", "Zooplankton Water Control Week 3+4"))
+
+colourCount<-length(unique(CH_2_Top10_Taxa_Percent_ENV$Genus))
+getPalette<-colorRampPalette(brewer.pal(8, "Set1"))
+
+CH_2_Top10_Taxa_Percent_Graph_ENV<-ggplot(CH_2_Top10_Taxa_Percent_ENV, aes(x=Treatment, y = AVG, fill = Genus)) + geom_bar( colour = "black", stat="identity", position = position_dodge()) + theme_classic() + scale_fill_manual(values = getPalette(colourCount)) + labs(title = "Environmental Samples", subtitle = "Top 10 Bacterial Genera", x = "", y = "Average ASV Abundance") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + geom_errorbar(aes(ymin=AVG-SE, ymax = AVG+SE), width=.2, position=position_dodge(.9))
+
+CH_2_Top10_Taxa_Percent_Graph_ENV<-CH_2_Top10_Taxa_Percent_Graph_ENV+ theme(plot.title = element_text(size = 14), axis.text = element_text(size=14), axis.title = element_text(size=14), legend.title = element_text(size=14), legend.text = element_text(size=12))
+
+
+#FISH
+CH_2_Top10_Taxa_Percent<-read.csv(file = "~/Taxa_Graphs/CH_2_Top10_Taxa_FISH_COMBINED.csv", header=TRUE, check.names = FALSE)
+
+CH_2_Top10_Taxa_Percent$Treatment<-factor(CH_2_Top10_Taxa_Percent$Treatment, levels = c("Week 0", "Artemia/Week 1", "Artemia/Week 2", "Artemia/Week 3", "Artemia/Week 4", "Zooplankton/Week 1", "Zooplankton/Week 2", "Zooplankton/Week 3", "Zooplankton/Week 4"))
+
+colourCount<-length(unique(CH_2_Top10_Taxa_Percent$Genus))
+getPalette<-colorRampPalette(brewer.pal(8, "Set1"))
+
+CH_2_Top10_Taxa_Percent_Graph<-ggplot(CH_2_Top10_Taxa_Percent, aes(x=Treatment, y = AVG, fill = Genus)) + geom_bar( colour = "black", stat="identity", position = position_dodge()) + theme_classic() + scale_fill_manual(values = getPalette(colourCount)) + labs(title = "Larval Northern Pike Gut Microbiota", subtitle = "Top 10 Bacterial Genera", x = "", y = "Average ASV Abundance") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + geom_errorbar(aes(ymin=AVG-SE, ymax = AVG+SE), width=.2, position=position_dodge(.9))
+
+CH_2_Top10_Taxa_Percent_Graph<-CH_2_Top10_Taxa_Percent_Graph+ theme(plot.title = element_text(size = 14), axis.text = element_text(size=14), axis.title = element_text(size=14), legend.title = element_text(size=14), legend.text = element_text(size=12))
+
+#COMBINE
+
+ggarrange(CH_2_Top10_Taxa_Percent_Graph_ENV, CH_2_Top10_Taxa_Percent_Graph, labels = c("A", "B"), common.legend = TRUE, legend = "right", nrow = 2)
+```
+
+Heatmap Clustering (Top 10 Taxa - Normalized):
+
+```{r}
+#NMDS Heatmap
+
+theme_set(theme_bw())
+plot_heatmap(CH_2_Diet_Phylo.top10_Norm_C, sample.label = "Treatment", "NMDS", "bray", "Genus", sample.order = "Treatment")
+
+```
+
+
+Heatmap Clustering (Top 10 Taxa - Normalized - No Contamination):
+
+```{r}
+
+theme_set(theme_bw())
+plot_heatmap(CH_2_Diet_Phylo.top10_Norm, sample.label = "Treatment", "NMDS", "bray", "Genus", sample.order = "Treatment")
+
+```
+
+#Alpha Diversity Analysis
+
+##Observed, Chao1, Shannon
+
+```{r}
+otu_table(CH_2_Diet_Phylo_Norm_C)<-otu_table(CH_2_Diet_Phylo_Norm_C)[, -grep("ZOOP", colnames(otu_table(CH_2_Diet_Phylo_Norm_C)))]
+otu_table(CH_2_Diet_Phylo_Norm_C)<-otu_table(CH_2_Diet_Phylo_Norm_C)[, -grep("ART", colnames(otu_table(CH_2_Diet_Phylo_Norm_C)))]
+otu_table(CH_2_Diet_Phylo_Norm_C)<-otu_table(CH_2_Diet_Phylo_Norm_C)[, -grep("DF", colnames(otu_table(CH_2_Diet_Phylo_Norm_C)))]
+
+sample_data(CH_2_Diet_Phylo_Norm_C)$Treatment<-factor(sample_data(CH_2_Diet_Phylo_Norm_C)$Treatment, levels = c("Week 0", "Artemia/Week 1", "Artemia/Week 2", "Artemia/Week 3", "Artemia/Week 4", "Zooplankton/Week 1", "Zooplankton/Week 2", "Zooplankton/Week 3", "Zooplankton/Week 4"))
+
+CH_2_Diet_Phylo_Alpha_C<-prune_taxa(taxa_sums(CH_2_Diet_Phylo_Norm_C) > 0, CH_2_Diet_Phylo_Norm_C)
+
+plot_richness(CH_2_Diet_Phylo_Alpha_C, x = "Treatment", measures = c("Observed", "Chao1", "Shannon")) + theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+CH_2_Diet_Alpha_C<-estimate_richness(CH_2_Diet_Phylo_Norm_C, split = TRUE, measures = c("Observed", "Chao1", "Shannon"))
+CH_2_Diet_Alpha_C$Treatment<-ARTZOOP_ALL_metadata_C$Treatment
+
+CH_2_Diet_Observed_C<-oneway.test(Observed~Treatment, data = CH_2_Diet_Alpha_C)
+
+#Observed
+CH_2_Diet_Obs_PH_C<-posthocTGH(y = CH_2_Diet_Alpha_C$Observed, x = CH_2_Diet_Alpha_C$Treatment, method = "games-howell")
+
+CH_2_Diet_Obs_PH_C
+
+#Chao1
+CH_2_Diet_Chao1_PH_C<-posthocTGH(y = CH_2_Diet_Alpha_C$Chao1, x = CH_2_Diet_Alpha_C$Treatment, method = "games-howell")
+
+CH_2_Diet_Chao1_PH_C
+
+#Shannon
+CH_2_Diet_Shannon_PH_C<-posthocTGH(y = CH_2_Diet_Alpha_C$Shannon, x = CH_2_Diet_Alpha_C$Treatment, method = "games-howell")
+
+CH_2_Diet_Shannon_PH_C
+```
+
+#Core Microbiome Analysis
+
+##Microbes with >50% coverage and >1% total microbiota per sample
+
+Week0:
+
+```{r}
+Week0_Phylo<-read.csv(file = "~/Core_Microbiome/Week0_COMBINED.csv", header = TRUE, check.names = FALSE, row.names=1)
+
+Week0_Phylo$Genus<-NULL
+Week0_Phylo$Genus<-NULL
+
+Week0_Phylo_m<-as.matrix(Week0_Phylo)
+Week0_Phylo<-otu_table(Week0_Phylo_m, taxa_are_rows = TRUE)
+
+Week0_metadata<-read.csv(file = "~/Core_Microbiome/Week0_metadata.csv", header = TRUE, check.names = FALSE, row.names=1)
+
+Week0_metadata<-sample_data(Week0_metadata)
+
+Week0_Phylo<-phyloseq(Week0_Phylo, Week0_metadata)
+
+Week0_rel<-transform(Week0_Phylo, "compositional")
+
+Week0_Prevalence<-prevalence(Week0_rel, detection = 1/100, sort = TRUE)
+Week0_Prevalence[1:50]
+```
+
+AW1:
+
+```{r}
+ARTW1_Phylo<-read.csv(file = "~/Core_Microbiome/ARTW1_COMBINED.csv", header = TRUE, check.names = FALSE, row.names = 1)
+
+ARTW1_Phylo$Genus<-NULL
+ARTW1_Phylo$Genus<-NULL
+
+ARTW1_Phylo_m<-as.matrix(ARTW1_Phylo)
+ARTW1_Phylo<-otu_table(ARTW1_Phylo_m, taxa_are_rows = TRUE)
+
+ARTW1_Phylo_metadata<-read.csv(file = "~/Core_Microbiome/CH_2_ARTW1_Phylo_metadata.csv", header = TRUE, check.names = FALSE, row.names = 1)
+
+ARTW1_Phylo_metadata<-sample_data(ARTW1_Phylo_metadata)
+
+ARTW1_Phylo<-phyloseq(ARTW1_Phylo, ARTW1_Phylo_metadata)
+
+ARTW1_rel<-transform(ARTW1_Phylo, "compositional")
+
+ARTW1_Prevalence<-prevalence(ARTW1_rel, detection = 1/100, sort = TRUE)
+ARTW1_Prevalence[1:50]
+```
+
+AW2:
+
+```{r}
+ARTW2_Phylo<-read.csv(file = "~/Core_Microbiome/ARTW2_COMBINED.csv", header = TRUE, check.names = FALSE, row.names=1)
+
+ARTW2_Phylo$Genus<-NULL
+ARTW2_Phylo$Genus<-NULL
+
+ARTW2_Phylo_m<-as.matrix(ARTW2_Phylo)
+ARTW2_Phylo<-otu_table(ARTW2_Phylo_m, taxa_are_rows = TRUE)
+
+ARTW2_Phylo_metadata<-read.csv(file = "~/Core_Microbiome/CH_2_ARTW2_Phylo_metadata.csv", header = TRUE, check.names = FALSE, row.names = 1)
+
+ARTW2_Phylo_metadata<-sample_data(ARTW2_Phylo_metadata)
+
+ARTW2_Phylo<-phyloseq(ARTW2_Phylo, ARTW2_Phylo_metadata)
+
+ARTW2_rel<-transform(ARTW2_Phylo, "compositional")
+
+ARTW2_Prevalence<-prevalence(ARTW2_rel, detection = 1/100, sort = TRUE)
+ARTW2_Prevalence[1:50]
+```
+
+AW3
+
+```{r}
+ARTW3_Phylo<-read.csv(file = "~/Core_Microbiome/ARTW3_COMBINED.csv", header = TRUE, check.names = FALSE, row.names=1)
+
+
+ARTW3_Phylo$Genus<-NULL
+ARTW3_Phylo$Genus<-NULL
+
+ARTW3_Phylo_m<-as.matrix(ARTW3_Phylo)
+ARTW3_Phylo<-otu_table(ARTW3_Phylo_m, taxa_are_rows = TRUE)
+
+ARTW3_Phylo_metadata<-read.csv(file = "~/Core_Microbiome/CH_2_ARTW3_Phylo_metadata.csv", header = TRUE, check.names = FALSE, row.names = 1)
+
+ARTW3_Phylo_metadata<-sample_data(ARTW3_Phylo_metadata)
+
+ARTW3_Phylo<-phyloseq(ARTW3_Phylo, ARTW3_Phylo_metadata)
+
+ARTW3_rel<-transform(ARTW3_Phylo, "compositional")
+
+ARTW3_Prevalence<-prevalence(ARTW3_rel, detection = 1/100, sort = TRUE)
+ARTW3_Prevalence[1:50]
+```
+
+AW4 (No Contamination)
+
+```{r}
+ARTW4_Phylo<-read.csv(file = "~/Core_Microbiome/ARTW4_COMBINED.csv", header = TRUE, check.names = FALSE, row.names=1)
+
+ARTW4_Phylo$Genus<-NULL
+ARTW4_Phylo$Genus<-NULL
+
+ARTW4_Phylo_m<-as.matrix(ARTW4_Phylo)
+ARTW4_Phylo<-otu_table(ARTW4_Phylo_m, taxa_are_rows = TRUE)
+
+ARTW4_Phylo_metadata<-read.csv(file = "~/Core_Microbiome/CH_2_ARTW4_Phylo_metadata.csv", header = TRUE, check.names = FALSE, row.names = 1)
+
+ARTW4_Phylo_metadata<-sample_data(ARTW4_Phylo_metadata)
+
+ARTW4_Phylo<-phyloseq(ARTW4_Phylo, ARTW4_Phylo_metadata)
+
+ARTW4_rel<-transform(ARTW4_Phylo, "compositional")
+
+ARTW4_Prevalence<-prevalence(ARTW4_rel, detection = 1/100, sort = TRUE)
+ARTW4_Prevalence[1:50]
+```
+
+AW4 (Contamination)
+
+```{r}
+ARTW4_C_Phylo<-read.csv(file = "~/Core_Microbiome/ARTW4_C_COMBINED.csv", header = TRUE, check.names = FALSE, row.names=1)
+
+ARTW4_C_Phylo$Genus<-NULL
+ARTW4_C_Phylo$Genus<-NULL
+
+ARTW4_C_Phylo_m<-as.matrix(ARTW4_C_Phylo)
+ARTW4_C_Phylo<-otu_table(ARTW4_C_Phylo_m, taxa_are_rows = TRUE)
+
+ARTW4_C_Phylo_metadata<-read.csv(file = "~/Core_Microbiome/CH_2_ARTW4_CONTAM_metadata.csv", header = TRUE, check.names = FALSE, row.names = 1)
+
+ARTW4_C_Phylo_metadata<-sample_data(ARTW4_C_Phylo_metadata)
+
+ARTW4_C_Phylo<-phyloseq(ARTW4_C_Phylo, ARTW4_C_Phylo_metadata)
+
+ARTW4_C_rel<-transform(ARTW4_C_Phylo, "compositional")
+
+ARTW4_C_Prevalence<-prevalence(ARTW4_C_rel, detection = 1/100, sort = TRUE)
+ARTW4_C_Prevalence[1:50]
+```
+
+Artemia Graphs
+
+```{r}
+#Calculate % ASV Abundance from Core microbiota using .csv files (...PHYLO.csv). PHYLO_MERGE files combine ASVs with same genus denmarcation. SD + SE also calculated
+
+getPalette<-colorRampPalette(brewer.pal(8, "Set1"))
+
+Week0_Log2<-read.csv(file = "~/Core_Microbiome/Week0_COMBINED_Log2.csv", header = TRUE, check.names = FALSE)
+
+Week0_Log2_Graph<-ggplot(data = Week0_Log2, aes(x = Treatment, y = AVG, fill =  Genus)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs(subtitle = "Week 0 Fish", y = "ASV Abundance (%)", x="") + geom_errorbar(aes(ymin=AVG-SE, ymax=AVG+SE), width=.2, position=position_dodge(.9)) + theme_classic() + ylim(0,60) + scale_fill_manual(values = c(getPalette(10)))+ theme(axis.text.x = element_blank()) + theme(axis.ticks.x = element_blank())
+
+
+ARTW1_Log2<-read.csv(file = "~/Core_Microbiome/ARTW1_COMBINED_Log2.csv", header = TRUE, check.names = FALSE)
+
+ARTW1_Log2_Graph<-ggplot(data = ARTW1_Log2, aes(x = Treatment, y = AVG, fill =  Genus)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs(subtitle = "Artemia Week 1", y = "", x="") + geom_errorbar(aes(ymin=AVG-SE, ymax=AVG+SE), width=.2, position=position_dodge(.9)) + theme_classic() + ylim(0,60) + scale_fill_manual(values = c(getPalette(7)))+ theme(axis.text.x = element_blank()) + theme(axis.ticks.x = element_blank())
+
+ARTW2_Log2<-read.csv(file = "~/Core_Microbiome/ARTW2_COMBINED_Log2.csv", header = TRUE, check.names = FALSE)
+
+ARTW2_Log2_Graph<-ggplot(data = ARTW2_Log2, aes(x = Treatment, y = AVG, fill =  Genus)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs(subtitle = "Artemia Week 2", y = "", x="") + geom_errorbar(aes(ymin=AVG-SE, ymax=AVG+SE), width=.2, position=position_dodge(.9)) + theme_classic() + ylim(0,80)+ scale_fill_manual(values = c(getPalette(10)))+ theme(axis.text.x = element_blank()) + theme(axis.ticks.x = element_blank())
+
+ARTW3_Log2<-read.csv(file = "~/Core_Microbiome/ARTW3_COMBINED_Log2.csv", header = TRUE, check.names = FALSE)
+
+ARTW3_Log2_Graph<-ggplot(data = ARTW3_Log2, aes(x = Treatment, y = AVG, fill =  Genus)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs(subtitle = "Artemia Week 3", y = "ASV Abundance (%)", x="") + geom_errorbar(aes(ymin=AVG-SE, ymax=AVG+SE), width=.2, position=position_dodge(.9)) + theme_classic() + ylim(0,100)+ scale_fill_manual(values = c(getPalette(5)))+ theme(axis.text.x = element_blank()) + theme(axis.ticks.x = element_blank())
+
+ARTW4_Log2<-read.csv(file = "~/Core_Microbiome/ARTW4_COMBINED_Log2.csv", header = TRUE, check.names = FALSE)
+
+ARTW4_Log2_Graph<-ggplot(data = ARTW4_Log2, aes(x = Treatment, y = AVG, fill =  Genus)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs(subtitle = "Artemia Week 4", y = "", x="") + geom_errorbar(aes(ymin=AVG-SE, ymax=AVG+SE), width=.2, position=position_dodge(.9)) + theme_classic() + ylim(0,100)+ scale_fill_manual(values = c(getPalette(5))) + theme(axis.text.x = element_blank()) + theme(axis.ticks.x = element_blank())
+
+ARTW4_CONTAM_Log2<-read.csv(file = "~/Core_Microbiome/ARTW4_C_COMBINED_Log2.csv", header = TRUE, check.names = FALSE)
+
+ARTW4_CONTAM_Log2_Graph<-ggplot(data = ARTW4_CONTAM_Log2, aes(x = Treatment, y = AVG, fill =  Genus)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs(subtitle = "Artemia Week 4 (Contamination)", y = "", x="") + geom_errorbar(aes(ymin=AVG-SE, ymax=AVG+SE), width=.2, position=position_dodge(.9)) + theme_classic() + ylim(0,100)+ scale_fill_manual(values = c(getPalette(5))) + theme(axis.text.x = element_blank()) + theme(axis.ticks.x = element_blank())
+
+ART_CORE_FINAL<-ggarrange(Week0_Log2_Graph, ARTW1_Log2_Graph, ARTW2_Log2_Graph, ARTW3_Log2_Graph, ARTW4_Log2_Graph, labels = c("A", "B", "C", "D", "E"), common.legend = FALSE, legend = "right")
+
+ART_CORE_CONTAM_FINAL<-ggarrange(Week0_Log2_Graph, ARTW1_Log2_Graph, ARTW2_Log2_Graph, ARTW3_Log2_Graph, ARTW4_CONTAM_Log2_Graph, labels = c("A", "B", "C", "D", "E"), common.legend = FALSE, legend = "right")
+```
+
+Z1
+```{r}
+ZOOPW1_Phylo<-read.csv(file = "~/Core_Microbiome/ZOOPW1_COMBINED.csv", header = TRUE, check.names = FALSE, row.names=1)
+
+ZOOPW1_Phylo$Genus<-NULL
+ZOOPW1_Phylo$Genus<-NULL
+
+ZOOPW1_Phylo_m<-as.matrix(ZOOPW1_Phylo)
+ZOOPW1_Phylo<-otu_table(ZOOPW1_Phylo_m, taxa_are_rows = TRUE)
+
+ZOOPW1_Phylo_metadata<-read.csv(file = "~/Core_Microbiome/CH_2_ZOOPW1_Phylo_metadata.csv", header = TRUE, check.names = FALSE, row.names = 1)
+
+ZOOPW1_Phylo_metadata<-sample_data(ZOOPW1_Phylo_metadata)
+
+ZOOPW1_Phylo<-phyloseq(ZOOPW1_Phylo, ZOOPW1_Phylo_metadata)
+
+ZOOPW1_rel<-transform(ZOOPW1_Phylo, "compositional")
+
+ZOOPW1_Prevalence<-prevalence(ZOOPW1_rel, detection = 1/100, sort = TRUE)
+ZOOPW1_Prevalence[1:50]
+```
+
+Z2
+```{r}
+ZOOPW2_Phylo<-read.csv(file = "~/Core_Microbiome/ZOOPW2_COMBINED.csv", header = TRUE, check.names = FALSE, row.names=1)
+
+ZOOPW2_Phylo$Genus<-NULL
+ZOOPW2_Phylo$Genus<-NULL
+
+ZOOPW2_Phylo_m<-as.matrix(ZOOPW2_Phylo)
+ZOOPW2_Phylo<-otu_table(ZOOPW2_Phylo_m, taxa_are_rows = TRUE)
+
+ZOOPW2_Phylo_metadata<-read.csv(file = "~/Core_Microbiome/CH_2_ZOOPW2_Phylo_metadata.csv", header = TRUE, check.names = FALSE, row.names = 1)
+
+ZOOPW2_Phylo_metadata<-sample_data(ZOOPW2_Phylo_metadata)
+
+ZOOPW2_Phylo<-phyloseq(ZOOPW2_Phylo, ZOOPW2_Phylo_metadata)
+
+ZOOPW2_rel<-transform(ZOOPW2_Phylo, "compositional")
+
+ZOOPW2_Prevalence<-prevalence(ZOOPW2_rel, detection = 1/100, sort = TRUE)
+ZOOPW2_Prevalence[1:50]
+```
+
+Z3
+
+```{r}
+ZOOPW3_Phylo<-read.csv(file = "~/Core_Microbiome/ZOOPW3_COMBINED.csv", header = TRUE, check.names = FALSE, row.names=1)
+
+ZOOPW3_Phylo$Genus<-NULL
+ZOOPW3_Phylo$Genus<-NULL
+
+ZOOPW3_Phylo_m<-as.matrix(ZOOPW3_Phylo)
+ZOOPW3_Phylo<-otu_table(ZOOPW3_Phylo_m, taxa_are_rows = TRUE)
+
+ZOOPW3_Phylo_metadata<-read.csv(file = "~/Core_Microbiome/CH_2_ZOOPW3_Phylo_metadata.csv", header = TRUE, check.names = FALSE, row.names = 1)
+
+ZOOPW3_Phylo_metadata<-sample_data(ZOOPW3_Phylo_metadata)
+
+ZOOPW3_Phylo<-phyloseq(ZOOPW3_Phylo, ZOOPW3_Phylo_metadata)
+
+ZOOPW3_rel<-transform(ZOOPW3_Phylo, "compositional")
+
+ZOOPW3_Prevalence<-prevalence(ZOOPW3_rel, detection = 1/100, sort = TRUE)
+ZOOPW3_Prevalence[1:50]
+```
+ 
+Z4
+
+```{r}
+ZOOPW4_Phylo<-read.csv(file = "~/Core_Microbiome/ZOOPW4_COMBINED.csv", header = TRUE, check.names = FALSE, row.names = 1)
+
+ZOOPW4_Phylo$Genus<-NULL
+ZOOPW4_Phylo$Genus<-NULL
+
+ZOOPW4_Phylo_m<-as.matrix(ZOOPW4_Phylo)
+ZOOPW4_Phylo<-otu_table(ZOOPW4_Phylo_m, taxa_are_rows = TRUE)
+
+ZOOPW4_Phylo_metadata<-read.csv(file = "~/Core_Microbiome/CH_2_ZOOPW4_Phylo_metadata.csv", header = TRUE, check.names = FALSE, row.names = 1)
+
+ZOOPW4_Phylo_metadata<-sample_data(ZOOPW4_Phylo_metadata)
+
+ZOOPW4_Phylo<-phyloseq(ZOOPW4_Phylo, ZOOPW4_Phylo_metadata)
+
+ZOOPW4_rel<-transform(ZOOPW4_Phylo, "compositional")
+
+ZOOPW4_Prevalence<-prevalence(ZOOPW4_rel, detection = 1/100, sort = TRUE)
+ZOOPW4_Prevalence[1:50]
+```
+
+Zooplankton Graphs
+
+```{r}
+ZOOPW1_Log2<-read.csv(file = "~/Core_Microbiome/ZOOPW1_COMBINED_Log2.csv", header = TRUE, check.names = FALSE)
+
+ZOOPW1_Log2_Graph<-ggplot(data = ZOOPW1_Log2, aes(x = Treatment, y = AVG, fill =  Genus)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs(subtitle = "Zooplankton Week 1", y = "", x="") + geom_errorbar(aes(ymin=AVG-SE, ymax=AVG+SE), width=.2, position=position_dodge(.9)) + theme_classic() + ylim(0,80) + scale_fill_manual(values = c(getPalette(10)))+ theme(axis.text.x = element_blank()) + theme(axis.ticks.x = element_blank())
+
+ZOOPW2_Log2<-read.csv(file = "~/Core_Microbiome/ZOOPW2_COMBINED_Log2.csv", header = TRUE, check.names = FALSE)
+
+ZOOPW2_Log2_Graph<-ggplot(data = ZOOPW2_Log2, aes(x = Treatment, y = AVG, fill =  Genus)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs(subtitle = "Zooplankton Week 2", y = "", x="") + geom_errorbar(aes(ymin=AVG-SE, ymax=AVG+SE), width=.2, position=position_dodge(.9)) + theme_classic() + ylim(0,80)+ scale_fill_manual(values = c(getPalette(10)))+ theme(axis.text.x = element_blank()) + theme(axis.ticks.x = element_blank())
+
+ZOOPW3_Log2<-read.csv(file = "~/Core_Microbiome/ZOOPW3_COMBINED_Log2.csv", header = TRUE, check.names = FALSE)
+
+ZOOPW3_Log2_Graph<-ggplot(data = ZOOPW3_Log2, aes(x = Treatment, y = AVG, fill =  Genus)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs(subtitle = "Zooplankton Week 3", y = "ASV Abundance (%)", x="") + geom_errorbar(aes(ymin=AVG-SE, ymax=AVG+SE), width=.2, position=position_dodge(.9)) + theme_classic() + ylim(0,100)+ scale_fill_manual(values = c(getPalette(10)))+ theme(axis.text.x = element_blank()) + theme(axis.ticks.x = element_blank())
+
+ZOOPW4_Log2<-read.csv(file = "~/Core_Microbiome/ZOOPW4_COMBINED_Log2.csv", header = TRUE, check.names = FALSE)
+
+ZOOPW4_Log2_Graph<-ggplot(data = ZOOPW4_Log2, aes(x = Treatment, y = AVG, fill =  Genus)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs(subtitle = "Zooplankton Week 4", y = "", x="") + geom_errorbar(aes(ymin=AVG-SE, ymax=AVG+SE), width=.2, position=position_dodge(.9)) + theme_classic() + ylim(0,100)+ scale_fill_manual(values = c(getPalette(10))) + theme(axis.text.x = element_blank()) + theme(axis.ticks.x = element_blank())
+
+ZOOP_CORE_FINAL<-ggarrange(Week0_Log2_Graph, ZOOPW1_Log2_Graph, ZOOPW2_Log2_Graph, ZOOPW3_Log2_Graph, ZOOPW4_Log2_Graph, labels = c("A", "B", "C", "D", "E"), common.legend = FALSE, legend = "right")
+```
+
+Determining significant effects on Core bacteria abundances between locations:
+ALL(No contamination)
+
+```{r}
+CH_2_Fish_core_NC<-read.csv(file = "~/Core_Microbiome/ASV_Combined_CH_2_NORMAL.csv", header=TRUE, check.names=FALSE, row.names = 1)
+
+CH_2_Fish_core_NC<-as.matrix(CH_2_Fish_core_NC)
+CH_2_Fish_core_NC_otu<-otu_table(CH_2_Fish_core_NC, taxa_are_rows = TRUE)
+
+CH_2_Fish_core_NC_metadata<-read.csv(file = "~/Core_Microbiome/CH_2_Fish_Metadata.csv", header=TRUE, check.names=FALSE, row.names = 1)
+
+CH_2_Fish_core_NC_metadata<-sample_data(CH_2_Fish_core_NC_metadata)
+
+CH_2_Fish_core_NC_Phylo<-phyloseq(CH_2_Fish_core_NC_otu,CH_2_taxa_Phylo_C, CH_2_Fish_core_NC_metadata)
+
+CH_2_FishCore_NC_melt_transform<-transform_sample_counts(CH_2_Fish_core_NC_Phylo, function(CH_2_Fish_core_NC_otu) CH_2_Fish_core_NC_otu/sum(CH_2_Fish_core_NC_otu))
+  
+CH_2_FishCore_melted_NC<-psmelt(CH_2_FishCore_NC_melt_transform)
+
+CH_2_FishCore_melted_NC_cut<-subset(CH_2_FishCore_melted_NC, Genus == "Acidovorax" | Genus == "Chryseobacterium" |  Genus =="Collimonas" | Genus == "Janthinobacterium" | Genus == "Methyloversatilis" |  Genus == "Pseudomonas" | Genus =="Sphingobacterium" | Genus == "Undibacterium" | Genus == "Aeromonas"| Genus == "Clostridium_sensu_stricto_1" | Genus == "Deefgea" | Genus == "Shewanella" | Genus == "Plesiomonas" | Genus == "Chryseomicrobium" | Genus == "Domibacillus"| Genus == "Enterobacter" | Genus == "Escherichia/Shigella" | Genus == "Exiguobacterium" | Genus == "Cedecea" | Genus == "Lelliottia")
+
+CH_2_FishCore_melted_NC_cut<-CH_2_FishCore_melted_NC_cut[order(CH_2_FishCore_melted_NC_cut$Sample, CH_2_FishCore_melted_NC_cut$Genus),]
+
+write.csv(CH_2_FishCore_melted_NC_cut, "CH_2_FishCore_melted_NC_cut.csv")
+
+CH_2_FishCore_melted_NC_cut<-read.csv(file = "~/Core_Microbiome/CH_2_FishCore_melted_NC_cut.csv", header=TRUE, check.names = FALSE)
+#Offloading/Reloading data removes extraneous factors in `Genus` column which will produce an error when running the beta regression function below
+
+#Note when offloading data change the values = 1 to 0.9999999 (beta distribution can't deal with values at exactly 1)
+
+#Determine Fit of Distribution
+hist(CH_2_FishCore_melted_NC_cut$Abundance)
+
+#Based on numbers being between 0-1, we tried beta distribution
+
+CH_2_FishCore_melted_NC_cut_Abundance<-CH_2_FishCore_melted_NC_cut$Abundance
+CH_2_FishCore_melted_NC_cut_Abundance_scaled<-(CH_2_FishCore_melted_NC_cut_Abundance-min(CH_2_FishCore_melted_NC_cut_Abundance) + 0.000001/max(CH_2_FishCore_melted_NC_cut_Abundance) + 0.000002)
+
+#Note 0.00000001 and 0.00000002 are needed to fit beta distribution given the functions default log fit
+
+CH_2_FishCore_melted_NC_fitbeta<-fitdist(CH_2_FishCore_melted_NC_cut_Abundance_scaled, "beta")
+CH_2_FishCore_melted_NC_fitbeta
+cdfcomp(CH_2_FishCore_melted_NC_fitbeta, legendtext = "beta")
+
+#Fit looks good - so now time to plot the beta-transformed distribution
+
+betareg.control(maxit = 10000)
+CH_2_FishCore_melted_NC_dist<-betareg(CH_2_FishCore_melted_NC_cut_Abundance_scaled ~ Treatment*Genus, data=CH_2_FishCore_melted_NC_cut)
+
+summary(CH_2_FishCore_melted_NC_dist)
+Anova(CH_2_FishCore_melted_NC_dist, type = 3)
+
+Proc_marginal<-emmeans(CH_2_FishCore_melted_NC_dist, ~ Treatment*Genus)
+pairs(Proc_marginal, adjust = "tukey")
+cld(Proc_marginal, alpha = 0.05, Letters = letters, adjust = "tukey")
+```
+
+Determining significant effects on Core bacteria abundances between locations:
+ALL(+Contaminates)
+
+```{r}
+CH_2_Fish_C<-read.csv(file = "~/Core_Microbiome/ASV_Combined_CH_2_NORMAL_C.csv", header=TRUE, check.names=FALSE, row.names = 1)
+
+CH_2_Fish_C<-as.matrix(CH_2_Fish_C)
+CH_2_Fish_C_otu<-otu_table(CH_2_Fish_C, taxa_are_rows = TRUE)
+
+CH_2_Fish_C_metadata<-read.csv(file = "~/Core_Microbiome/CH_2_Fish_Metadata_C.csv", header=TRUE, check.names=FALSE, row.names = 1)
+
+CH_2_Fish_C_metadata<-sample_data(CH_2_Fish_C_metadata)
+
+CH_2_Fish_C_Phylo<-phyloseq(CH_2_Fish_C_otu,CH_2_taxa_Phylo_C, CH_2_Fish_C_metadata)
+
+CH_2_FishCore_C_melt_transform<-transform_sample_counts(CH_2_Fish_C_Phylo, function(CH_2_Fish_C_otu) CH_2_Fish_C_otu/sum(CH_2_Fish_C_otu))
+
+CH_2_FishCore_melted_C<-psmelt(CH_2_FishCore_C_melt_transform)
+
+CH_2_FishCore_melted_C_cut<-subset(CH_2_FishCore_melted_C, Genus == "Acidovorax" | Genus == "Chryseobacterium" |  Genus =="Collimonas" | Genus == "Janthinobacterium" | Genus == "Methyloversatilis" |  Genus == "Pseudomonas" | Genus =="Sphingobacterium" | Genus == "Undibacterium" | Genus == "Aeromonas"| Genus == "Clostridium_sensu_stricto_1" | Genus == "Deefgea" | Genus == "Shewanella" | Genus == "Plesiomonas" | Genus == "Chryseomicrobium" | Genus == "Domibacillus"| Genus == "Enterobacter" | Genus == "Escherichia/Shigella" | Genus == "Exiguobacterium" | Genus == "Cedecea" | Genus == "Lelliottia")
+
+CH_2_FishCore_melted_C_cut<-CH_2_FishCore_melted_C_cut[order(CH_2_FishCore_melted_C_cut$Sample, CH_2_FishCore_melted_C_cut$Genus),]
+
+write.csv(CH_2_FishCore_melted_C_cut, "CH_2_FishCore_melted_C_cut.csv")
+
+CH_2_FishCore_melted_C_cut<-read.csv(file = "~/Core_Microbiome/CH_2_FishCore_melted_C_cut.csv", header=TRUE, check.names = FALSE)
+#Offloading/Reloading data removes extraneous factors in `Genus` column which will produce an error when running the beta regression function below
+
+#Note when offloading data change the values = 1 to 0.9999999 (beta distribution can't deal with values at exactly 1)
+
+#Determine Fit of Distribution
+hist(CH_2_FishCore_melted_C_cut$Abundance)
+
+#Based on numbers being between 0-1, we tried beta distribution
+
+CH_2_Fish_Core_C_Abundance<-CH_2_FishCore_melted_C_cut$Abundance
+CH_2_Fish_Core_C_Abundance_scaled<-(CH_2_Fish_Core_C_Abundance-min(CH_2_Fish_Core_C_Abundance) + 0.000001/max(CH_2_Fish_Core_C_Abundance) + 0.000002)
+
+#Note 0.00000001 and 0.00000002 are needed to fit beta distribution given the functions default log fit
+
+CH_2_Fish_Core_C_fitbeta<-fitdist(CH_2_Fish_Core_C_Abundance_scaled, "beta")
+CH_2_Fish_Core_C_fitbeta
+cdfcomp(CH_2_Fish_Core_C_fitbeta, legendtext = "beta")
+
+#Fit looks good - so now time to plot the beta-transformed distribution
+
+betareg.control(maxit=10000)
+
+CH_2_Fish_Core_beta_dist<-betareg(CH_2_Fish_Core_C_Abundance_scaled ~ Treatment*Genus, data=CH_2_FishCore_melted_C_cut)
+
+summary(CH_2_Fish_Core_beta_dist)
+Anova(CH_2_Fish_Core_beta_dist, type = 3)
+
+Proc_marginal<-emmeans(CH_2_Fish_Core_beta_dist, ~ Treatment*Genus)
+pairs(Proc_marginal, adjust = "tukey")
+cld(Proc_marginal, alpha = 0.05, Letters = letters, adjust = "tukey")
+
+```
+
+###Creating Log2 Graphs (Environment vs. Fish & Fish vs. Time)
+
+Week0 vs. ART W1:
+
+```{r}
+#Core microbiota was viewed from W0-->W4 chronologically, where W1 was compared to W0, W2 core was compared to W1 core, W3 to W2, etc... ALL core microbiota for each comparison was calculated and then the larger week / smaller week = 'Log2' column.
+
+CH_2_W0ART1_Compare<-read.csv(file = "~/Core_Microbiome/Week0_ARTW1_Log2.csv", header=TRUE, check.names = FALSE)
+
+CH_2_W0ART1_Compare_log2fc<-log2(CH_2_W0ART1_Compare$Log2)
+
+CH_2_W0ART1_Compare_Graph<-ggplot(CH_2_W0ART1_Compare, aes(Genus, CH_2_W0ART1_Compare_log2fc)) +  geom_point(shape=18, size = 8) + ylim(-15,15) + theme_classic() + labs(y = "Log2-Fold Change", title =  "Log2-Fold Change of Core Gut Microbiota", subtitle = "Week 0 --> Artemia Week 1") + theme(axis.text.x = element_text(angle=315, vjust = -0.25, hjust = .25))+ geom_hline(yintercept = 0) + geom_hline(yintercept = -1, linetype = "dashed") + geom_hline(yintercept = 1, linetype = "dashed")
+
+CH_2_W0ART1_Compare_Graph<-CH_2_W0ART1_Compare_Graph + theme(axis.text = element_text(size=14), axis.title = element_text(size=14), plot.title = element_text(size=14))
+
+```
+
+
+ART W1 vs. W2
+
+```{r}
+CH_2_ARTW1W2_Compare<-read.csv(file = "~/Core_Microbiome/ARTW1_ARTW2_Log2.csv", header=TRUE, check.names = FALSE)
+
+CH_2_ARTW1W2_log2fc<-log2(CH_2_ARTW1W2_Compare$Log2)
+
+ARTW1W2_Compare_Graph<-ggplot(CH_2_ARTW1W2_Compare, aes(Genus, CH_2_ARTW1W2_log2fc)) +  geom_point(shape=18, size = 8) + ylim(-15,15) + theme_classic() + labs(y = "Log2-Fold Change", title =  "Log2-Fold Change of Core Gut Microbiota", subtitle = "Artemia Week 1 --> Artemia Week 2") + theme(axis.text.x = element_text(angle=315, vjust = -0.25, hjust = .25))+ geom_hline(yintercept = 0) + geom_hline(yintercept = -1, linetype = "dashed") + geom_hline(yintercept = 1, linetype = "dashed")
+
+ARTW1W2_Compare_Graph<-ARTW1W2_Compare_Graph+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14), plot.title = element_text(size=14))
+
+```
+
+ART W2 vs. W3
+
+```{r}
+CH_2_ARTW2W3_Compare<-read.csv(file = "~/Core_Microbiome/ARTW2_ARTW3_Log2.csv", header=TRUE, check.names = FALSE)
+
+CH_2_ARTW2W3_log2fc<-log2(CH_2_ARTW2W3_Compare$Log2)
+
+ARTW2W3_Compare_Graph<-ggplot(CH_2_ARTW2W3_Compare, aes(Genus, CH_2_ARTW2W3_log2fc)) +  geom_point(shape=18, size = 8) + theme_classic() + labs(y = "Log2-Fold Change", title =  "Log2-Fold Change of Core Gut Microbiota", subtitle = "Artemia Week 2 --> Artemia Week 3") + theme(axis.text.x = element_text(angle=315, vjust = -0.25, hjust = .25))+ geom_hline(yintercept = 0) + geom_hline(yintercept = -1, linetype = "dashed") + geom_hline(yintercept = 1, linetype = "dashed")
+
+ARTW2W3_Compare_Graph<-ARTW2W3_Compare_Graph+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14), plot.title = element_text(size=14))
+
+```
+
+ART W3 vs. W4
+
+```{r}
+CH_2_ARTW3W4_Compare<-read.csv(file = "~/Core_Microbiome/ARTW3_ARTW4_Log2.csv", header=TRUE, check.names = FALSE)
+
+CH_2_ARTW3W4_log2fc<-log2(CH_2_ARTW3W4_Compare$Log2)
+
+ARTW3W4_Compare_Graph<-ggplot(CH_2_ARTW3W4_Compare, aes(Genus, CH_2_ARTW3W4_log2fc)) +  geom_point(shape=18, size = 8) + theme_classic() + labs(y = "Log2-Fold Change", title =  "Log2-Fold Change of Core Gut Microbiota", subtitle = "Artemia Week 3 --> Artemia Week 4") + theme(axis.text.x = element_text(angle=315, vjust = -0.25, hjust = .25))+ geom_hline(yintercept = 0) + geom_hline(yintercept = -1, linetype = "dashed") + geom_hline(yintercept = 1, linetype = "dashed")
+
+ARTW3W4_Compare_Graph<-ARTW3W4_Compare_Graph+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14), plot.title = element_text(size=14))
+
+```
+
+ART W3 vs. W4 (CONTAM)
+
+```{r}
+CH_2_ARTW3W4_C_Compare<-read.csv(file = "~/Core_Microbiome/ARTW3_ARTW4_C_Log2.csv", header=TRUE, check.names = FALSE)
+
+CH_2_ARTW3W4_C_log2fc<-log2(CH_2_ARTW3W4_C_Compare$Log2)
+
+CH_2_ARTW3W4_C_Graph<-ggplot(CH_2_ARTW3W4_C_Compare, aes(Genus, CH_2_ARTW3W4_C_log2fc)) +  geom_point(shape=18, size = 8) + theme_classic() + labs(y = "Log2-Fold Change", title =  "Log2-Fold Change of Core Gut Microbiota", subtitle = "Artemia Week 3 --> Artemia Week 4 (Contamination)") + theme(axis.text.x = element_text(angle=315, vjust = -0.25, hjust = .25))+ geom_hline(yintercept = 0) + geom_hline(yintercept = -1, linetype = "dashed") + geom_hline(yintercept = 1, linetype = "dashed")
+
+CH_2_ARTW3W4_C_Graph<-CH_2_ARTW3W4_C_Graph+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14), plot.title = element_text(size=14))
+
+
+ggarrange(CH_2_W0ART1_Compare_Graph, ARTW1W2_Compare_Graph, ARTW2W3_Compare_Graph, ARTW3W4_Compare_Graph, CH_2_ARTW3W4_C_Graph, labels = c("A", "B", "C", "D", "E"))
+```
+
+Week0 vs. ZOOP W1:
+
+```{r}
+
+CH_2_W0ZOOP1_Compare<-read.csv(file = "~/Core_Microbiome/Week0_ZOOPW1_Log2.csv", header=TRUE, check.names = FALSE)
+
+CH_2_W0ZOOP1_Compare_log2fc<-log2(CH_2_W0ZOOP1_Compare$Log2)
+
+CH_2_W0ZOOP1_Compare_Graph<-ggplot(CH_2_W0ZOOP1_Compare, aes(Genus, CH_2_W0ZOOP1_Compare_log2fc)) +  geom_point(shape=18, size = 8) + ylim(-15,15) + theme_classic() + labs(y = "Log2-Fold Change", title =  "Log2-Fold Change of Core Gut Microbiota", subtitle = "Week 0 --> Zooplankton Week 1") + theme(axis.text.x = element_text(angle=315, vjust = -0.25, hjust = .25))+ geom_hline(yintercept = 0) + geom_hline(yintercept = -1, linetype = "dashed") + geom_hline(yintercept = 1, linetype = "dashed")
+
+CH_2_W0ZOOP1_Compare_Graph<-CH_2_W0ZOOP1_Compare_Graph+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14), plot.title = element_text(size=14))
+```
+
+ZOOP W1 vs. W2
+
+```{r}
+CH_2_ZOOPW1W2_Compare<-read.csv(file = "~/Core_Microbiome/ZOOPW1_ZOOPW2_Log2.csv", header=TRUE, check.names = FALSE)
+
+CH_2_ZOOPW1W2_log2fc<-log2(CH_2_ZOOPW1W2_Compare$Log2)
+
+CH_2_ZOOPW1W2_Graph<-ggplot(CH_2_ZOOPW1W2_Compare, aes(Genus, CH_2_ZOOPW1W2_log2fc)) +  geom_point(shape=18, size = 8) + theme_classic() + labs(y = "Log2-Fold Change", title =  "Log2-Fold Change of Core Gut Microbiota", subtitle = "Zooplankton Week 1 --> Zooplankton Week 2") + theme(axis.text.x = element_text(angle=315, vjust = -0.25, hjust = .25))+ geom_hline(yintercept = 0) + geom_hline(yintercept = -1, linetype = "dashed") + geom_hline(yintercept = 1, linetype = "dashed")
+
+CH_2_ZOOPW1W2_Graph<-CH_2_ZOOPW1W2_Graph+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14), plot.title = element_text(size=14))
+
+```
+
+ZOOP W2 vs. W3
+```{r}
+CH_2_ZOOPW2W3_Compare<-read.csv(file = "~/Core_Microbiome/ZOOPW2_ZOOPW3_Log2.csv", header=TRUE, check.names = FALSE)
+
+CH_2_ZOOPW2W3_log2fc<-log2(CH_2_ZOOPW2W3_Compare$Log2)
+
+CH_2_ZOOPW2W3_Graph<-ggplot(CH_2_ZOOPW2W3_Compare, aes(Genus, CH_2_ZOOPW2W3_log2fc)) +  geom_point(shape=18, size = 8) + theme_classic() + labs(y = "Log2-Fold Change", title =  "Log2-Fold Change of Core Gut Microbiota", subtitle = "Zooplankton Week 2 --> Zooplankton Week 3") + theme(axis.text.x = element_text(angle=315, vjust = -0.25, hjust = .25))+ geom_hline(yintercept = 0) + geom_hline(yintercept = -1, linetype = "dashed") + geom_hline(yintercept = 1, linetype = "dashed")
+
+CH_2_ZOOPW2W3_Graph<-CH_2_ZOOPW2W3_Graph+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14), plot.title = element_text(size=14))
+
+```
+
+ZOOP W3 vs. W4
+```{r}
+CH_2_ZOOPW3W4_Compare<-read.csv(file = "~/Core_Microbiome/ZOOPW3_ZOOPW4_Log2.csv", header=TRUE, check.names = FALSE)
+
+CH_2_ZOOPW3W4_log2fc<-log2(CH_2_ZOOPW3W4_Compare$Log2)
+
+CH_2_ZOOPW3W4_Graph<-ggplot(CH_2_ZOOPW3W4_Compare, aes(Genus, CH_2_ZOOPW3W4_log2fc)) +  geom_point(shape=18, size = 8) + theme_classic() + labs(y = "Log2-Fold Change", title =  "Log2-Fold Change of Core Gut Microbiota", subtitle = "Zooplankton Week 3 --> Zooplankton Week 4") + theme(axis.text.x = element_text(angle=315, vjust = -0.25, hjust = .25))+ geom_hline(yintercept = 0) + geom_hline(yintercept = -1, linetype = "dashed") + geom_hline(yintercept = 1, linetype = "dashed")
+
+CH_2_ZOOPW3W4_Graph<-CH_2_ZOOPW3W4_Graph+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14), plot.title = element_text(size=14))
+
+ggarrange( CH_2_W0ZOOP1_Compare_Graph ,CH_2_ZOOPW1W2_Graph,  CH_2_ZOOPW2W3_Graph, CH_2_ZOOPW3W4_Graph, labels = c("A", "B", "C", "D"))
+```
+
+#Tax4Fun Analysis -  Predicting Microbial Functions based on Community Composition
+##Treatments vs. Treatments
+###Individual File: CH_2_Tax4Fun_Microbial_Function_Predictions.Rmd
+
+####No Contamination
+
+```{r}
+#Load All Fish Community Data
+CH_2_Tax4Fun_ASVs<-read.csv(file = "~/Tax4Fun_Microbial_Functions/ASV_COMBINED_CH_2_NORMAL.csv", header=TRUE, check.names=FALSE, row.names=1)
+
+CH_2_Tax4Fun_ASVs_t<-as.data.frame(t(CH_2_Tax4Fun_ASVs))
+
+BEN<-list(CH_2_Tax4Fun_ASVs_t, CH_2_taxa)
+
+###Note CH_2_taxa is same file from CH_2_Alpha_Diversity.Rmd (e.g. full taxonomy)
+
+names(BEN)<-paste("name", 1:2, sep = "")
+
+tmp <- tempdir()
+download_ref(tmp,reference='silva_ko',overwrite=FALSE)
+FUNCTIONS <- t4f(BEN$name1, rows_are_taxa=FALSE, tax_table = BEN$name2, reference_path = tmp, type = 'uproc', short=TRUE, cn_normalize = TRUE, sample_normalize =TRUE, drop=TRUE)
+
+write.csv(FUNCTIONS$fxn_table, "FUNCTIONS_FXN_TABLE.csv")
+write.csv(FUNCTIONS$method_meta, "FUNCTIONS_METHOD_META.csv")
+write.csv(FUNCTIONS$fxn_meta$KEGG_Description, "FUNCTIONS_FXN_META_KEGG_DESCRIPTION.csv")
+write.csv(FUNCTIONS$fxn_meta$KEGG_Pathways, "FUNCTIONS_FXN_META_KEGG_PATHWAYS.csv")
+```
+
+
+Function Bar Graph (Top 10 KO's):
+```{r}
+
+head(sort(colSums(FUNCTIONS$fxn_table), decreasing = TRUE), n = 20)
+###Determine's Top 10 KO Hits - Fill out CH_2_Tax4Fun_Analysis_ForR.csv with average ASV Relative abundance values (+/- SE), function category (Unknown w/ enzyme function if no function found), and Treatment (All Fish treatments)###
+
+#ENV Information Processing ONLY
+
+CH_2_Tax4Fun_function_ENV_SIG<-read.csv(file = "~/Tax4Fun_Microbial_Functions/CH_2_Tax4Fun_Analysis_ForR_ENV_SIGNAL.csv", header = TRUE, check.names = FALSE)
+
+CH_2_Tax4Fun_function_ENV_SIG$Treatment<-factor(CH_2_Tax4Fun_function_ENV_SIG$Treatment, levels = c("No Food", "ArtemiaW1", "ArtemiaW2", "ArtemiaW3", "ArtemiaW4", "ZooplanktonW1", "ZooplanktonW2", "ZooplanktonW3", "ZooplanktonW4"))
+
+CH_2_Tax4Fun_function_Graph_ENV_SIG<-ggplot(data = CH_2_Tax4Fun_function_ENV_SIG, aes(x = Pathway, y =ASV_Relative_Abundance, fill = Treatment)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs (title = "Tax4Fun Microbial Function Predictions", subtitle = "Environmental Information Processing (Signal Transduction)", y = "Relative Gene Abundance") + theme(axis.text.y = element_text(size =7)) + geom_errorbar(aes(ymin=ASV_Relative_Abundance-SE, ymax=ASV_Relative_Abundance+SE), width=.2, position=position_dodge(0.9)) + theme_classic() + annotate("text", label = c("A","A", "A", "A", "A", "A", "A", "A", "A"), x = c(.6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4), y = c(-0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004), size=4, fontface  = 2) + xlab("") + theme(axis.text.x = element_blank())+ scale_fill_manual(values = c("gray65", "darkslategray2", "darkslategray3", "darkslategray4", "darkslategray", "darkgoldenrod1","darkgoldenrod2", "darkgoldenrod3", "darkgoldenrod4")) + theme(plot.subtitle = element_text(size=8))+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14), plot.title = element_text(size=14), legend.title = element_text(size=14), legend.text = element_text(size=14))
+
+
+#Cellular Processes ONLY
+CH_2_Tax4Fun_function_Cell_Proc<-read.csv(file = "~/Tax4Fun_Microbial_Functions/CH_2_Tax4Fun_Analysis_ForR_Cell_Proc.csv", header = TRUE, check.names = FALSE)
+
+CH_2_Tax4Fun_function_Cell_Proc$Treatment<-factor(CH_2_Tax4Fun_function_Cell_Proc$Treatment, levels = c("No Food", "ArtemiaW1", "ArtemiaW2", "ArtemiaW3", "ArtemiaW4", "ZooplanktonW1", "ZooplanktonW2", "ZooplanktonW3", "ZooplanktonW4"))
+
+CH_2_Tax4Fun_function_Graph_Cell_Proc<-ggplot(data = CH_2_Tax4Fun_function_Cell_Proc, aes(x = Pathway, y =ASV_Relative_Abundance, fill = Treatment)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs (title = "Tax4Fun Microbial Function Predictions", subtitle = "Cellular Processes (Motility)", y = "") + theme(axis.text.y = element_text(size =7)) + geom_errorbar(aes(ymin=ASV_Relative_Abundance-SE, ymax=ASV_Relative_Abundance+SE), width=.2, position=position_dodge(0.9)) + theme_classic() + annotate("text", label = c("A","A", "A", "A", "A", "A", "A", "A", "A"), x = c(.6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4), y = c(-0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004), size=4, fontface  = 2) + xlab("") + theme(axis.text.x = element_blank())+ scale_fill_manual(values = c("gray65", "darkslategray2", "darkslategray3", "darkslategray4", "darkslategray", "darkgoldenrod1","darkgoldenrod2", "darkgoldenrod3", "darkgoldenrod4"))+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14), plot.title = element_text(size=14), legend.title = element_text(size=14), legend.text = element_text(size=14))
+
+#Metabolic Pathways ONLY
+CH_2_Tax4Fun_function_Metab<-read.csv(file = "~/Tax4Fun_Microbial_Functions/CH_2_Tax4Fun_Analysis_ForR_Metab.csv", header = TRUE, check.names = FALSE)
+
+CH_2_Tax4Fun_function_Metab$Treatment<-factor(CH_2_Tax4Fun_function_Metab$Treatment, levels = c("No Food", "ArtemiaW1", "ArtemiaW2", "ArtemiaW3", "ArtemiaW4", "ZooplanktonW1", "ZooplanktonW2", "ZooplanktonW3", "ZooplanktonW4"))
+
+CH_2_Tax4Fun_function_Graph_Metab<-ggplot(data = CH_2_Tax4Fun_function_Metab, aes(x = Pathway, y =ASV_Relative_Abundance, fill = Treatment)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs (title = "Tax4Fun Microbial Function Predictions", subtitle = "Metabolic Pathways", y = "Relative Gene Abundance") + theme(axis.text.y = element_text(size =7)) + geom_errorbar(aes(ymin=ASV_Relative_Abundance-SE, ymax=ASV_Relative_Abundance+SE), width=.2, position=position_dodge(0.9)) + theme_classic() + annotate("text", label = c("CDE","DE", "A", "ABC", "ABCDE", "ABCD", "E", "AB", "BCDE"), x = c(.6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4), y = c(-0.0005, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005), size=4, fontface  = 2) + xlab("") + theme(axis.text.x = element_blank())+ scale_fill_manual(values = c("gray65", "darkslategray2", "darkslategray3", "darkslategray4", "darkslategray", "darkgoldenrod1","darkgoldenrod2", "darkgoldenrod3", "darkgoldenrod4"))+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14), plot.title = element_text(size=14), legend.title = element_text(size=14), legend.text = element_text(size=14))
+
+#Genetic Information ONLY
+CH_2_Tax4Fun_function_Gen<-read.csv(file = "~/Tax4Fun_Microbial_Functions/CH_2_Tax4Fun_Analysis_ForR_Gen.csv", header = TRUE, check.names = FALSE)
+
+CH_2_Tax4Fun_function_Gen$Treatment<-factor(CH_2_Tax4Fun_function_Gen$Treatment, levels = c("No Food", "ArtemiaW1", "ArtemiaW2", "ArtemiaW3", "ArtemiaW4", "ZooplanktonW1", "ZooplanktonW2", "ZooplanktonW3", "ZooplanktonW4"))
+
+CH_2_Tax4Fun_function_Graph_Gen<-ggplot(data = CH_2_Tax4Fun_function_Gen, aes(x = Pathway, y =ASV_Relative_Abundance, fill = Treatment)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs (title = "Tax4Fun Microbial Function Predictions", subtitle = "Genetic Information Processing (Replication + Repair or Transcription", y = "") + theme(axis.text.y = element_text(size =7)) + geom_errorbar(aes(ymin=ASV_Relative_Abundance-SE, ymax=ASV_Relative_Abundance+SE), width=.2, position=position_dodge(0.9)) + theme_classic() + annotate("text", label = c("CD","BC", "A", "AB", "ABCD", "AB", "D", "A", "ABC"), x = c(.6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4), y = c(-0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004), size=4, fontface  = 2) + xlab("") + theme(axis.text.x = element_blank())+ scale_fill_manual(values = c("gray65", "darkslategray2", "darkslategray3", "darkslategray4", "darkslategray", "darkgoldenrod1","darkgoldenrod2", "darkgoldenrod3", "darkgoldenrod4"))+ theme(axis.text = element_text(size=14), axis.title = element_text(size=14), plot.title = element_text(size=14), legend.title = element_text(size=14), legend.text = element_text(size=14))
+
+#ALL
+
+ggarrange(CH_2_Tax4Fun_function_Graph_ENV_SIG, CH_2_Tax4Fun_function_Graph_Cell_Proc, CH_2_Tax4Fun_function_Graph_Metab, CH_2_Tax4Fun_function_Graph_Gen, ncol=2, nrow=2, common.legend = TRUE,  legend = c("right"), labels = c("A", "B", "C", "D"))
+```
+
+Significance per KO between Treatments
+
+```{r}
+#Export Data for 1st KO (Environmental Information Processing)
+#File name = CH_2_KO_Env_Processing.csv
+
+#Environmental Information Processing (Signal Transduction or Membrane Transport or Prokaryote Community Processes
+
+CH_2_KO_Env_Processing<-read.csv(file = "~/Tax4Fun_Microbial_Functions/CH_2_KO_Env_Processing.csv", header = TRUE, check.names = FALSE)
+
+CH_2_KO_Env_Processing_beta<-fitdist(CH_2_KO_Env_Processing$Environmental_Info, "beta")
+cdfcomp(CH_2_KO_Env_Processing_beta, legendtext = "beta")
+
+CH_2_KO_Env_Processing_beta_dist<-betareg(CH_2_KO_Env_Processing$Environmental_Info ~ Treatment, data=CH_2_KO_Env_Processing)
+
+summary(CH_2_KO_Env_Processing_beta_dist)
+
+Anova(CH_2_KO_Env_Processing_beta_dist, type = 3)
+
+Env_Proc_marginal<-emmeans(CH_2_KO_Env_Processing_beta_dist, ~ Treatment)
+pairs(Env_Proc_marginal, adjust = "tukey")
+cld(Env_Proc_marginal, alpha = 0.05, Letters = letters, adjust = "tukey")
+
+#Cellular Processes (Motility)
+
+CH_2_KO_Cell_Proc_beta<-fitdist(CH_2_KO_Env_Processing$Cellular_Proc, "beta")
+cdfcomp(CH_2_KO_Cell_Proc_beta, legendtext = "beta")
+
+CH_2_KO_Cell_Proc_beta_dist<-betareg(CH_2_KO_Env_Processing$Cellular_Proc ~ Treatment, data=CH_2_KO_Env_Processing)
+
+summary(CH_2_KO_Cell_Proc_beta_dist)
+
+Anova(CH_2_KO_Cell_Proc_beta_dist, type = 3)
+
+Cell_Proc_marginal<-emmeans(CH_2_KO_Cell_Proc_beta_dist, ~ Treatment)
+pairs(Cell_Proc_marginal, adjust = "tukey")
+cld(Cell_Proc_marginal, alpha = 0.05, Letters = letters, adjust = "tukey")
+
+#Metabolic
+
+CH_2_Metabolic_beta<-fitdist(CH_2_KO_Env_Processing$Metabolic, "beta")
+cdfcomp(CH_2_Metabolic_beta, legendtext = "beta")
+
+CH_2_Metabolic_beta_dist<-betareg(CH_2_KO_Env_Processing$Metabolic ~ Treatment, data=CH_2_KO_Env_Processing)
+
+summary(CH_2_Metabolic_beta_dist)
+
+Anova(CH_2_Metabolic_beta_dist, type = 3)
+
+Meta_marginal<-emmeans(CH_2_Metabolic_beta_dist, ~ Treatment)
+pairs(Meta_marginal, adjust = "tukey")
+cld(Meta_marginal, alpha = 0.05, Letters = letters, adjust = "tukey")
+
+#Genetic Information
+
+CH_2_Gen_beta<-fitdist(CH_2_KO_Env_Processing$Genetic_Info, "beta")
+cdfcomp(CH_2_Gen_beta, legendtext = "beta")
+
+CH_2_Gen_beta_dist<-betareg(CH_2_KO_Env_Processing$Genetic_Info ~ Treatment, data=CH_2_KO_Env_Processing)
+
+
+Anova(CH_2_Gen_beta_dist, type = 3)
+
+Gen_marginal<-emmeans(CH_2_Gen_beta_dist, ~ Treatment)
+pairs(Gen_marginal, adjust = "tukey")
+cld(Gen_marginal, alpha = 0.05, Letters = letters, adjust = "tukey")
+```
+
+####Contamination
+
+```{r}
+#Load All Fish Community Data
+CH_2_Tax4Fun_ASVs_C<-read.csv(file = "~/Tax4Fun_Microbial_Functions/ASV_COMBINED_CH_2_NORMAL_C.csv", header=TRUE, check.names=FALSE, row.names=1)
+
+CH_2_Tax4Fun_ASVs_t_C<-as.data.frame(t(CH_2_Tax4Fun_ASVs_C))
+
+BEN_C<-list(CH_2_Tax4Fun_ASVs_t_C, CH_2_taxa)
+
+###Note CH_2_taxa is same file from CH_2_Alpha_Diversity.Rmd (e.g. full taxonomy)
+
+names(BEN_C)<-paste("name", 1:2, sep = "")
+
+tmp_C <- tempdir()
+download_ref(tmp,reference='silva_ko',overwrite=FALSE)
+FUNCTIONS_C <- t4f(BEN_C$name1, rows_are_taxa=FALSE, tax_table = BEN_C$name2, reference_path = tmp, type = 'uproc', short=TRUE, cn_normalize = TRUE, sample_normalize =TRUE, drop=TRUE)
+
+write.csv(FUNCTIONS_C$fxn_table, "FUNCTIONS_FXN_TABLE_C.csv")
+write.csv(FUNCTIONS_C$method_meta, "FUNCTIONS_METHOD_META_C.csv")
+write.csv(FUNCTIONS_C$fxn_meta$KEGG_Description, "FUNCTIONS_FXN_META_KEGG_DESCRIPTION_C.csv")
+write.csv(FUNCTIONS_C$fxn_meta$KEGG_Pathways, "FUNCTIONS_FXN_META_KEGG_PATHWAYS_C.csv")
+```
+
+Function Bar Graph (Top 10 KO's):
+```{r}
+
+head(sort(colSums(FUNCTIONS_C$fxn_table), decreasing = TRUE), n = 20)
+###Determine's Top 10 KO Hits - Fill out CH_2_Tax4Fun_Analysis_ForR.csv with average ASV Relative abundance values (+/- SE), function category (Unknown w/ enzyme function if no function found), and Treatment (All Fish treatments)###
+
+#ENV Information Processing ONLY
+
+CH_2_Tax4Fun_function_ENV_SIG_C<-read.csv(file = "~/Tax4Fun_Microbial_Functions/CH_2_Tax4Fun_Analysis_ForR_ENV_SIGNAL_C.csv", header = TRUE, check.names = FALSE)
+
+CH_2_Tax4Fun_function_ENV_SIG_C$Treatment<-factor(CH_2_Tax4Fun_function_ENV_SIG_C$Treatment, levels = c("No Food", "ArtemiaW1", "ArtemiaW2", "ArtemiaW3", "ArtemiaW4", "ZooplanktonW1", "ZooplanktonW2", "ZooplanktonW3", "ZooplanktonW4"))
+
+CH_2_Tax4Fun_function_Graph_ENV_SIG_C<-ggplot(data = CH_2_Tax4Fun_function_ENV_SIG_C, aes(x = Pathway, y =ASV_Relative_Abundance, fill = Treatment)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs (title = "Tax4Fun Microbial Function Predictions (+Contamination)", subtitle = "Environmental Information Processing (Signal Transduction)", y = "Relative Gene Abundance") + theme(axis.text.y = element_text(size =7)) + geom_errorbar(aes(ymin=ASV_Relative_Abundance-SE, ymax=ASV_Relative_Abundance+SE), width=.2, position=position_dodge(0.9)) + theme_classic() + annotate("text", label = c("BC","BC", "C", "AB", "A", "C", "C", "AB", "AB"), x = c(.6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4), y = c(-0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004), size=4, fontface  = 2) + xlab("") + theme(axis.text.x = element_blank())+ scale_fill_manual(values = c("gray65", "darkslategray2", "darkslategray3", "darkslategray4", "darkslategray", "darkgoldenrod1","darkgoldenrod2", "darkgoldenrod3", "darkgoldenrod4")) + theme(plot.subtitle = element_text(size=8))
+
+
+#Cellular Processes ONLY
+CH_2_Tax4Fun_function_Cell_Proc_C<-read.csv(file = "~/Tax4Fun_Microbial_Functions/CH_2_Tax4Fun_Analysis_ForR_Cell_Proc_C.csv", header = TRUE, check.names = FALSE)
+
+CH_2_Tax4Fun_function_Cell_Proc_C$Treatment<-factor(CH_2_Tax4Fun_function_Cell_Proc_C$Treatment, levels = c("No Food", "ArtemiaW1", "ArtemiaW2", "ArtemiaW3", "ArtemiaW4", "ZooplanktonW1", "ZooplanktonW2", "ZooplanktonW3", "ZooplanktonW4"))
+
+CH_2_Tax4Fun_function_Graph_Cell_Proc_C<-ggplot(data = CH_2_Tax4Fun_function_Cell_Proc_C, aes(x = Pathway, y =ASV_Relative_Abundance, fill = Treatment)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs (title = "Tax4Fun Microbial Function Predictions (+Contamination)", subtitle = "Cellular Processes (Motility)", y = "") + theme(axis.text.y = element_text(size =7)) + geom_errorbar(aes(ymin=ASV_Relative_Abundance-SE, ymax=ASV_Relative_Abundance+SE), width=.2, position=position_dodge(0.9)) + theme_classic() + annotate("text", label = c("BC","BC", "C", "AB", "A", "C", "C", "A", "A"), x = c(.6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4), y = c(-0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004), size=4, fontface  = 2) + xlab("") + theme(axis.text.x = element_blank())+ scale_fill_manual(values = c("gray65", "darkslategray2", "darkslategray3", "darkslategray4", "darkslategray", "darkgoldenrod1","darkgoldenrod2", "darkgoldenrod3", "darkgoldenrod4"))
+
+#Metabolic Pathways ONLY
+CH_2_Tax4Fun_function_Metab_C<-read.csv(file = "~/Tax4Fun_Microbial_Functions/CH_2_Tax4Fun_Analysis_ForR_Metab_C.csv", header = TRUE, check.names = FALSE)
+
+CH_2_Tax4Fun_function_Metab_C$Treatment<-factor(CH_2_Tax4Fun_function_Metab_C$Treatment, levels = c("No Food", "ArtemiaW1", "ArtemiaW2", "ArtemiaW3", "ArtemiaW4", "ZooplanktonW1", "ZooplanktonW2", "ZooplanktonW3", "ZooplanktonW4"))
+
+CH_2_Tax4Fun_function_Graph_Metab_C<-ggplot(data = CH_2_Tax4Fun_function_Metab_C, aes(x = Pathway, y =ASV_Relative_Abundance, fill = Treatment)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs (title = "Tax4Fun Microbial Function Predictions (+Contamination)", subtitle = "Metabolic Pathways", y = "Relative Gene Abundance") + theme(axis.text.y = element_text(size =7)) + geom_errorbar(aes(ymin=ASV_Relative_Abundance-SE, ymax=ASV_Relative_Abundance+SE), width=.2, position=position_dodge(0.9)) + theme_classic() + annotate("text", label = c("C","BC", "A", "AB", "ABC", "AB", "A", "A", "A"), x = c(.6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4), y = c(-0.0005, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005), size=4, fontface  = 2) + xlab("") + theme(axis.text.x = element_blank())+ scale_fill_manual(values = c("gray65", "darkslategray2", "darkslategray3", "darkslategray4", "darkslategray", "darkgoldenrod1","darkgoldenrod2", "darkgoldenrod3", "darkgoldenrod4"))
+
+#Genetic Information ONLY
+CH_2_Tax4Fun_function_Gen_C<-read.csv(file = "~/Tax4Fun_Microbial_Functions/CH_2_Tax4Fun_Analysis_ForR_Gen.csv", header = TRUE, check.names = FALSE)
+
+CH_2_Tax4Fun_function_Gen_C$Treatment<-factor(CH_2_Tax4Fun_function_Gen_C$Treatment, levels = c("No Food", "ArtemiaW1", "ArtemiaW2", "ArtemiaW3", "ArtemiaW4", "ZooplanktonW1", "ZooplanktonW2", "ZooplanktonW3", "ZooplanktonW4"))
+
+CH_2_Tax4Fun_function_Graph_Gen_C<-ggplot(data = CH_2_Tax4Fun_function_Gen_C, aes(x = Pathway, y =ASV_Relative_Abundance, fill = Treatment)) + geom_bar(stat="identity", color = "black", position = position_dodge()) + labs (title = "Tax4Fun Microbial Function Predictions (+Contamination)", subtitle = "Genetic Information Processing (Replication + Repair or Transcription", y = "") + theme(axis.text.y = element_text(size =7)) + geom_errorbar(aes(ymin=ASV_Relative_Abundance-SE, ymax=ASV_Relative_Abundance+SE), width=.2, position=position_dodge(0.9)) + theme_classic() + annotate("text", label = c("BC","AB", "AB", "AB", "ABC", "BC", "C", "A", "A"), x = c(.6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4), y = c(-0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004, -0.0004), size=4, fontface  = 2) + xlab("") + theme(axis.text.x = element_blank())+ scale_fill_manual(values = c("gray65", "darkslategray2", "darkslategray3", "darkslategray4", "darkslategray", "darkgoldenrod1","darkgoldenrod2", "darkgoldenrod3", "darkgoldenrod4"))
+
+#ALL
+
+ggarrange(CH_2_Tax4Fun_function_Graph_ENV_SIG_C, CH_2_Tax4Fun_function_Graph_Cell_Proc_C, CH_2_Tax4Fun_function_Graph_Metab_C, CH_2_Tax4Fun_function_Graph_Gen_C, ncol=2, nrow=2, common.legend = TRUE,  legend = c("right"))
+```
+
+Significance per KO between Treatments
+
+```{r}
+#Export Data for 1st KO (Environmental Information Processing)
+#File name = CH_2_KO_Env_Processing.csv
+
+#Environmental Information Processing (Signal Transduction or Membrane Transport or Prokaryote Community Processes
+
+CH_2_KO_Env_Processing_C<-read.csv(file = "~/Tax4Fun_Microbial_Functions/CH_2_KO_Env_Processing_C.csv", header = TRUE, check.names = FALSE)
+
+CH_2_KO_Env_Processing_beta_C<-fitdist(CH_2_KO_Env_Processing_C$Environmental_Info, "beta")
+cdfcomp(CH_2_KO_Env_Processing_beta_C, legendtext = "beta")
+
+CH_2_KO_Env_Processing_beta_dist_C<-betareg(CH_2_KO_Env_Processing_C$Environmental_Info ~ Treatment, data=CH_2_KO_Env_Processing_C)
+
+summary(CH_2_KO_Env_Processing_beta_dist_C)
+
+Anova(CH_2_KO_Env_Processing_beta_dist_C, type = 3)
+
+Env_Proc_marginal_C<-emmeans(CH_2_KO_Env_Processing_beta_dist_C, ~ Treatment)
+pairs(Env_Proc_marginal_C, adjust = "tukey")
+cld(Env_Proc_marginal_C, alpha = 0.05, Letters = letters, adjust = "tukey")
+
+#Cellular Processes (Motility)
+
+CH_2_KO_Cell_Proc_beta_C<-fitdist(CH_2_KO_Env_Processing_C$Cellular_Proc, "beta")
+cdfcomp(CH_2_KO_Cell_Proc_beta_C, legendtext = "beta")
+
+CH_2_KO_Cell_Proc_beta_dist_C<-betareg(CH_2_KO_Env_Processing_C$Cellular_Proc ~ Treatment, data=CH_2_KO_Env_Processing_C)
+
+summary(CH_2_KO_Cell_Proc_beta_dist_C)
+
+Anova(CH_2_KO_Cell_Proc_beta_dist_C, type = 3)
+
+Cell_Proc_marginal_C<-emmeans(CH_2_KO_Cell_Proc_beta_dist_C, ~ Treatment)
+pairs(Cell_Proc_marginal_C, adjust = "tukey")
+cld(Cell_Proc_marginal_C, alpha = 0.05, Letters = letters, adjust = "tukey")
+
+#Metabolic
+
+CH_2_Metabolic_beta_C<-fitdist(CH_2_KO_Env_Processing_C$Metabolic, "beta")
+cdfcomp(CH_2_Metabolic_beta_C, legendtext = "beta")
+
+CH_2_Metabolic_beta_dist_C<-betareg(CH_2_KO_Env_Processing_C$Metabolic ~ Treatment, data=CH_2_KO_Env_Processing_C)
+
+summary(CH_2_Metabolic_beta_dist_C)
+
+Anova(CH_2_Metabolic_beta_dist_C, type = 3)
+
+Meta_marginal_C<-emmeans(CH_2_Metabolic_beta_dist_C, ~ Treatment)
+pairs(Meta_marginal_C, adjust = "tukey")
+cld(Meta_marginal_C, alpha = 0.05, Letters = letters, adjust = "tukey")
+
+#Genetic Information
+
+CH_2_Gen_beta_C<-fitdist(CH_2_KO_Env_Processing_C$Genetic_Info, "beta")
+cdfcomp(CH_2_Gen_beta_C, legendtext = "beta")
+
+CH_2_Gen_beta_dist_C<-betareg(CH_2_KO_Env_Processing_C$Genetic_Info ~ Treatment, data=CH_2_KO_Env_Processing_C)
+
+summary(CH_2_Gen_beta_dist_C)
+
+Anova(CH_2_Gen_beta_dist_C, type = 3)
+
+Gen_marginal_C<-emmeans(CH_2_Gen_beta_dist_C, ~ Treatment)
+pairs(Gen_marginal_C, adjust = "tukey")
+cld(Gen_marginal_C, alpha = 0.05, Letters = letters, adjust = "tukey")
+```
+
+No Contam vs. Contam
+
+```{r}
+Test_Contam<-read.csv(file = "~/Tax4Fun_Microbial_Functions/CONTAM_KO_Effect.csv", header = TRUE, check.names = FALSE)
+
+#ENV
+
+Test_Contam_beta<-fitdist(Test_Contam$Environmental_Info, "beta")
+cdfcomp(Test_Contam_beta, legendtext = "beta")
+
+Test_Contam_beta_dist_C<-betareg(Test_Contam$Environmental_Info ~ Treatment, data=Test_Contam)
+
+
+Anova(Test_Contam_beta_dist_C, type = 3)
+
+#Cellular Processes (Motility)
+
+Test_Contam_Cell_Proc_beta<-fitdist(Test_Contam$Cellular_Proc, "beta")
+cdfcomp(Test_Contam_Cell_Proc_beta, legendtext = "beta")
+
+Test_Contam_Cell_Proc_beta_dist<-betareg(Test_Contam$Cellular_Proc ~ Treatment, data=Test_Contam)
+
+
+Anova(Test_Contam_Cell_Proc_beta_dist, type = 3)
+
+#Metabolic
+
+Test_Contam_metabolic<-fitdist(Test_Contam$Metabolic, "beta")
+cdfcomp(Test_Contam_metabolic, legendtext = "beta")
+
+Test_Contam_metabolic_dist_C<-betareg(Test_Contam$Metabolic ~ Treatment, data=Test_Contam)
+
+summary(Test_Contam_metabolic_dist_C)
+
+Anova(Test_Contam_metabolic_dist_C, type = 3)
+
+Test_Meta_marginal_C<-emmeans(Test_Contam_metabolic_dist_C, ~ Treatment)
+pairs(Test_Meta_marginal_C, adjust = "tukey")
+cld(Test_Meta_marginal_C, alpha = 0.05, Letters = letters, adjust = "tukey")
+
+#Genetic Information
+
+Test_Contam_gen<-fitdist(Test_Contam$Genetic_Info, "beta")
+cdfcomp(Test_Contam_gen, legendtext = "beta")
+
+Test_Contam_beta_dist_C<-betareg(Test_Contam$Genetic_Info ~ Treatment, data=Test_Contam)
+
+summary(Test_Contam_beta_dist_C)
+
+Anova(Test_Contam_beta_dist_C, type = 3)
+```
