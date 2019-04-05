@@ -1,0 +1,16 @@
+---
+title: "CH_2_ZOOPLANKTON_ANALYSIS"
+author: "Benjamin Gallo"
+date: "11/15/2018"
+output: html_document
+---
+
+```{r}
+CH_2_ZOOP_RAW<-read.csv("~/Desktop/CH_2_ZOOPLANKTON_FINAL.csv", header=TRUE)
+CH_2_ZOOP_RAW$GROUP<-factor(CH_2_ZOOP_RAW$GROUP, levels = c("BOSMINIDAE", "CHYDORIDAE", "SIDIDAE", "CALANOIDA", "CYCLOPOIDA", "DOGIELINOTIDAE", "HYDRACHNIDIA", "OSTRACODA"))
+
+CH_2_ZOOP_BAR<-ggplot(data = CH_2_ZOOP_RAW, aes(x = LOCATION)) + geom_bar(aes(weight=COUNT, fill = GROUP)) + theme_classic() + scale_fill_manual(values=ZOOP_Palette(colourCount_ZOOP)) + labs(title = "Wetland Zooplankton Community Assemblage", subtitle = "Upper St. Lawrence River, NY", y = "COUNT (AVG.)")
+
+
+
+```
