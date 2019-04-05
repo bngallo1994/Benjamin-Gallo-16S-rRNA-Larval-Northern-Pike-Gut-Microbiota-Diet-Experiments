@@ -1,0 +1,48 @@
+###INSTALL BIOM###
+
+pip install biom-format
+
+
+###Convert CH_2_ASV to .biom format###
+
+biom convert -i CH_2_ALL_ASV_TABLE.txt -o CH_2_ALL_ASV_TABLE.biom --table-type "OTU table" --to-json
+
+###Open Mothur###
+
+mothur > make.shared(biom=CH_2_ALL_ASV_TABLE.biom)
+[WARNING]: the shared file only uses integers, any float values will be rounded down to the nearest integer.
+
+userLabel
+
+Output File Names: 
+CH_2_ALL_ASV_TABLE.shared
+
+mothur > rarefaction.single(shared=CH_2_ALL_ASV_TABLE.shared)
+
+
+
+biom convert -i CH_1_seqtab_ALL_COMBINED.txt -o CH_1_seqtab_ALL_COMBINED.biom --table-type "OTU table" --to-json
+
+mothur > make.shared(biom=CH_1_seqtab_ALL_COMBINED.biom)
+[WARNING]: the shared file only uses integers, any float values will be rounded down to the nearest integer.
+
+userLabel
+
+Output File Names: 
+CH_1_seqtab_ALL_COMBINED.shared
+
+mothur > rarefaction.single(shared=CH_1_seqtab_ALL_COMBINED.shared)
+
+
+
+biom convert -i CH_4_seqtab_ALL_COMBINED.txt -o CH_4_seqtab_ALL_COMBINED.biom --table-type "OTU table" --to-json
+
+mothur > make.shared(biom=CH_4_seqtab_ALL_COMBINED.biom)
+[WARNING]: the shared file only uses integers, any float values will be rounded down to the nearest integer.
+
+userLabel
+
+Output File Names: 
+CH_4_seqtab_ALL_COMBINED.shared
+
+mothur > rarefaction.single(shared=CH_4_seqtab_ALL_COMBINED.shared)
