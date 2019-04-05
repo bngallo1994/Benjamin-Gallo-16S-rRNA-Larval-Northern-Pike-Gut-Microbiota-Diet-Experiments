@@ -43,6 +43,7 @@ Folder: DADA2_filter_Protocols
 Folder: Data_Files_Analysis_R_Code
   - All files pertaining to CH_2_ALL_MASTER_FILE.Rmd R-code. The pathways to each file are correct pertaining to the location of the file in this repository. File path may change when you download files to your own computer.
  
-
+Folder: Non_R_Scripts
+  - Contains a .txt file pertaining to how the rarefaction curves were created using created .biom files and .shared files through the BIOM project and Mothur.
 
 
