@@ -6,7 +6,10 @@ Weclome to the SOP Repository!
 
 The data included in this repository pertains to the collection of samples and data analysis associated with the following publication:
 
-TBD
+Initial diet influences future development paths of gut microbiota in larval northern pike (Esox lucius)
+B. D. Gallo, J. M. Farrell, & B. F. Leydet
+Hydrobiologia (2023)
+https://link.springer.com/article/10.1007/s10750-023-05266-8
 
 Provided below is a quick guide for understanding the contents of this repository. Please contact me if you have any questions. Enjoy!
 
